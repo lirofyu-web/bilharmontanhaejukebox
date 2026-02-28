@@ -1,7 +1,6 @@
 // components/CustomerForm.tsx
 import React, { useState, useCallback } from 'react';
 import { Customer, Equipment } from '../types';
-import CityAutocomplete from './CityAutocomplete';
 import { PlusIcon } from './icons/PlusIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
@@ -254,10 +253,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ customers, initialData, onS
                     </button>
                 </div>
             </div>
-            <div>
-                 <label htmlFor={`${isEditMode ? 'edit-' : ''}cidade`} className={`block text-sm font-medium ${isEditMode ? 'text-slate-300' : 'text-slate-600 dark:text-slate-300'} mb-1`}>Cidade</label>
-                 <CityAutocomplete id={`${isEditMode ? 'edit-' : ''}cidade`} value={formData.cidade || ''} onChange={handleCityChange} required />
-            </div>
+            <FormField label="Cidade" name="cidade" value={formData.cidade || ''} onChange={handleBaseChange} required isEditMode={isEditMode} />
             <FormField label="Cobrador" name="linhaNumero" value={formData.linhaNumero || ''} onChange={handleBaseChange} isEditMode={isEditMode}/>
             {isEditMode && !areValuesHidden && (
                 <FormField label="Dívida Atual (R$)" name="debtAmount" value={String(formData.debtAmount || '')} onChange={handleBaseChange} type="text" inputMode="decimal" isEditMode={isEditMode}/>

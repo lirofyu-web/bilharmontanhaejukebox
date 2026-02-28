@@ -2,19 +2,34 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# Montanha Bilhar e Jukebox
 
-This contains everything you need to run your app locally.
+Este é um aplicativo para gestão de clientes, cobranças e equipamentos para a empresa Montanha Bilhar e Jukebox.
 
-View your app in AI Studio: https://ai.studio/apps/6a7a4aaa-6a02-486b-ba63-5bea31746710
+## Como executar localmente
 
-## Run Locally
+**Pré-requisitos:** [Node.js](https://nodejs.org)
 
-**Prerequisites:**  Node.js
+1. **Instale as dependências:**
+   ```bash
+   npm install
+   ```
+2. **Execute o aplicativo em modo de desenvolvimento:**
+   ```bash
+   npm run dev
+   ```
+   O aplicativo estará disponível em [http://localhost:5173](http://localhost:5173).
 
+## Como fazer o build para produção
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Para criar uma versão otimizada do aplicativo para produção, execute o seguinte comando:
+
+```bash
+npm run build
+```
+
+Os arquivos do build serão gerados no diretório `dist`.
+
+## Deploy
+
+O deploy deste aplicativo é feito no Firebase Hosting.

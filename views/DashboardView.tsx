@@ -483,7 +483,7 @@ type MonthlyStats = {
     totalExpenses: number;
 };
 
-const DashboardView: React.FC<DashboardViewProps> = ({ billings, expenses, customers, debtPayments, warnings, onAddWarning, onResolveWarning, onDeleteWarning, lastBackupDate, onNavigateToSettings, areValuesHidden, deletedCustomersLog }) => {
+const DashboardView: React.FC<DashboardViewProps> = React.memo(({ billings, expenses, customers, debtPayments, warnings, onAddWarning, onResolveWarning, onDeleteWarning, lastBackupDate, onNavigateToSettings, areValuesHidden, deletedCustomersLog }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [chartView, setChartView] = useState<ChartView>('total');
 
@@ -655,6 +655,6 @@ const DashboardView: React.FC<DashboardViewProps> = ({ billings, expenses, custo
             </div>
         </div>
     );
-};
+});
 
 export default DashboardView;
