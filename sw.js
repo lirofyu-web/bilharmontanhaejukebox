@@ -83,3 +83,35 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// Listener para notificações push
+self.addEventListener('push', (event) => {
+  const data = event.data.json();
+  const options = {
+    body: data.body,
+    icon: '/icon-192x192.png',
+    badge: '/icon-192x192.png' // Ícone para a barra de status
+  };
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+// Listener para cliques em notificações
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close(); // Fecha a notificação
+
+  // Abre a URL do aplicativo ou foca em uma janela já aberta
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url === '/' && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
+    })
+  );
+});

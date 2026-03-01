@@ -9,8 +9,7 @@ import { ChartBarIcon } from './icons/ChartBarIcon';
 import { LogoIcon } from './icons/LogoIcon';
 import { MapIcon } from './icons/MapIcon';
 import { CogIcon } from './icons/CogIcon';
-import { ListBulletIcon } from './icons/ListBulletIcon';
-import { QrCodeIcon } from './icons/QrCodeIcon';
+import { BilliardIcon } from './icons/BilliardIcon';
 import { ArrowsPointingOutIcon } from './icons/ArrowsPointingOutIcon';
 
 interface SidebarProps {
@@ -18,7 +17,7 @@ interface SidebarProps {
   setView: (view: View) => void;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  onOpenScanner: () => void;
+  onOpenFastBilling: () => void;
   user: User | null;
 }
 
@@ -26,7 +25,6 @@ const navItems = [
     { view: 'DASHBOARD' as View, label: 'Dashboard', icon: HomeIcon },
     { view: 'CLIENTES' as View, label: 'Clientes', icon: UsersIcon },
     { view: 'COBRANCAS' as View, label: 'Cobranças', icon: ReceiptIcon },
-    { view: 'EQUIPAMENTOS' as View, label: 'Equipamentos', icon: ListBulletIcon },
     { view: 'DESPESAS' as View, label: 'Despesas', icon: CalculatorIcon },
     { view: 'ROTAS' as View, label: 'Rotas', icon: MapIcon },
     { view: 'RELATORIOS' as View, label: 'Relatórios', icon: ChartBarIcon },
@@ -36,15 +34,15 @@ const secondaryNavItems = [
     { view: 'CONFIGURACOES' as View, label: 'Configurações', icon: CogIcon },
 ]
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOpen, onOpenScanner, user }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOpen, onOpenFastBilling, user }) => {
 
     const handleViewChange = (view: View) => {
         setView(view);
         setIsOpen(false); // Close sidebar on navigation in mobile
     };
     
-    const handleScanClick = () => {
-        onOpenScanner();
+    const handleFastBillingClick = () => {
+        onOpenFastBilling();
         setIsOpen(false); // Close sidebar on action
     };
 
@@ -102,11 +100,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
                 </div>
                 <div className="mb-6">
                     <button 
-                        onClick={handleScanClick}
+                        onClick={handleFastBillingClick}
                         className="w-full flex items-center justify-center rounded-md p-3 transition-colors text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-500 shadow-md"
                     >
-                        <QrCodeIcon className="w-5 h-5 mr-3" />
-                        <span>Escanear e Faturar</span>
+                        <BilliardIcon className="w-5 h-5 mr-3" />
+                        <span>Faturamento Rápido</span>
                     </button>
                 </div>
                 <nav className="flex-grow">

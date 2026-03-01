@@ -15,7 +15,6 @@ import DashboardView from './views/DashboardView';
 import ClientesView from './views/ClientesView';
 import CobrancasView from './views/CobrancasView';
 import DespesasView from './views/DespesasView';
-import EquipamentosView from './views/EquipamentosView';
 import RotasView from './views/RotasView';
 import RelatoriosView from './views/RelatoriosView';
 import ConfiguracoesView from './views/ConfiguracoesView';
@@ -50,7 +49,7 @@ import DebtReceiptActionsModal from './components/DebtReceiptActionsModal';
 import ShareCustomerModal from './components/ShareCustomerModal';
 import LabelGenerationModal from './components/LabelGenerationModal';
 import EditBillingModal from './components/EditBillingModal';
-import QrScannerModal from './components/QrScannerModal';
+import FastBillingModal from './components/FastBillingModal';
 import ThermalPrintActionsModal from './components/ThermalPrintActionsModal';
 import LocationActionsModal from './components/LocationActionsModal';
 import AddPhoneModal from './components/AddPhoneModal';
@@ -70,7 +69,6 @@ const viewTitles: Record<View, string> = {
     'DASHBOARD': 'Dashboard',
     'CLIENTES': 'Clientes',
     'COBRANCAS': 'Cobranças',
-    'EQUIPAMENTOS': 'Equipamentos',
     'DESPESAS': 'Despesas',
     'ROTAS': 'Rotas',
     'RELATORIOS': 'Relatórios',
@@ -203,7 +201,7 @@ const App: React.FC = () => {
     const [shareCustomerModalState, setShareCustomerModalState] = useState<{ isOpen: boolean; customer: Customer | null; }>({ isOpen: false, customer: null });
     const [labelGenerationModalState, setLabelGenerationModalState] = useState<{ isOpen: boolean; }>({ isOpen: false });
     const [editBillingModalState, setEditBillingModalState] = useState<{ isOpen: boolean; billing: Billing | null; }>({ isOpen: false, billing: null });
-    const [qrScannerModalOpen, setQrScannerModalOpen] = useState(false);
+    const [isFastBillingModalOpen, setIsFastBillingModalOpen] = useState(false);
     const [thermalPrintModalState, setThermalPrintModalState] = useState<{ isOpen: boolean; title: string; content: string; }>({ isOpen: false, title: '', content: '' });
     const [locationActionsModalState, setLocationActionsModalState] = useState<{ isOpen: boolean; customer: Customer | null; }>({ isOpen: false, customer: null });
     const [saveLocationModalState, setSaveLocationModalState] = useState<{ isOpen: boolean; customer: Customer | null; }>({ isOpen: false, customer: null });
@@ -1239,12 +1237,14 @@ const App: React.FC = () => {
     }, [user, routes, isOnline, showNotification]);
 
     // --- Modal Triggers ---
-    const handleOpenBillingModal = useCallback((customer: Customer) => {
-        if (customer.equipment?.length === 1) {
-            setBillingModalState({ isOpen: true, customer, equipment: customer.equipment[0] });
-        } else {
-            setEquipmentSelectionModalState({ isOpen: true, customer });
-        }
+    const handleOpenBillingModal = useCallback((customer: Customer, equipment?: Equipment) => {
+      if (equipment) {
+        setBillingModalState({ isOpen: true, customer, equipment });
+      } else if (customer.equipment?.length === 1) {
+        setBillingModalState({ isOpen: true, customer, equipment: customer.equipment[0] });
+      } else {
+        setEquipmentSelectionModalState({ isOpen: true, customer });
+      }
     }, []);
 
     const handleSelectEquipmentForBilling = useCallback((equipment: Equipment) => {
@@ -1287,6 +1287,29 @@ const App: React.FC = () => {
             setSaveLocationModalState({ isOpen: true, customer });
         }
     }, []);
+
+    const handleConfirmFastBilling = useCallback((equipmentNumber: string) => {
+      const lowerCaseNumber = equipmentNumber.toLowerCase();
+      let foundCustomer: Customer | null = null;
+      let foundEquipment: Equipment | null = null;
+
+      for (const customer of customers) {
+          const equipment = customer.equipment.find(e => e.numero.toLowerCase() === lowerCaseNumber);
+          if (equipment) {
+              foundCustomer = customer;
+              foundEquipment = equipment;
+              break;
+          }
+      }
+
+      setIsFastBillingModalOpen(false);
+
+      if (foundCustomer && foundEquipment) {
+          handleOpenBillingModal(foundCustomer, foundEquipment);
+      } else {
+          showNotification(`Equipamento com o número "${equipmentNumber}" não foi encontrado.`, 'error');
+      }
+    }, [customers, showNotification, handleOpenBillingModal]);
 
     const handleSaveLocation = useCallback(async (customer: Customer) => {
         if (!navigator.geolocation) {
@@ -1564,9 +1587,8 @@ const App: React.FC = () => {
     const renderActiveView = () => {
         switch (currentView) {
             case 'DASHBOARD': return <DashboardView billings={billings} expenses={expenses} customers={customers} debtPayments={debtPayments} warnings={warnings} onAddWarning={handleAddWarning} onResolveWarning={handleResolveWarning} onDeleteWarning={handleDeleteWarning} lastBackupDate={lastBackupTimestamp} onNavigateToSettings={() => setView('CONFIGURACOES')} areValuesHidden={areValuesHidden} deletedCustomersLog={deletedCustomersLog} />;
-            case 'CLIENTES': return <ClientesView customers={customers} warnings={warnings} billings={billings} routes={routes} onAddCustomer={handleAddCustomer} isSaving={isSaving} showNotification={showNotification} onFocusCustomer={setFocusedCustomer} onBillCustomer={handleOpenBillingModal} onEditCustomer={handleOpenEditCustomerModal} onDeleteCustomer={handleOpenDeleteModal} onPayDebtCustomer={handleOpenDebtPaymentModal} onHistoryCustomer={handleOpenHistoryModal} onShareCustomer={handleOpenShareCustomerModal} onOpenScanner={() => setQrScannerModalOpen(true)} onLocationActions={handleOpenLocationActions} onWhatsAppActions={handleWhatsAppActions} onFinalizePendingPayment={(billing) => setFinalizePaymentModalState({ isOpen: true, billing })} areValuesHidden={areValuesHidden} onPendingPaymentAction={(customer, billing) => setPendingPaymentActionModalState({ isOpen: true, customer, pendingBilling: billing })} onOpenRouteCreator={() => setIsRouteCreationModalOpen(true)} onSaveRoute={handleSaveRoute} onDeleteRoute={handleDeleteRoute} />;
+            case 'CLIENTES': return <ClientesView customers={customers} warnings={warnings} billings={billings} routes={routes} onAddCustomer={handleAddCustomer} isSaving={isSaving} showNotification={showNotification} onFocusCustomer={setFocusedCustomer} onBillCustomer={handleOpenBillingModal} onEditCustomer={handleOpenEditCustomerModal} onDeleteCustomer={handleOpenDeleteModal} onPayDebtCustomer={handleOpenDebtPaymentModal} onHistoryCustomer={handleOpenHistoryModal} onShareCustomer={handleOpenShareCustomerModal} onOpenFastBilling={() => setIsFastBillingModalOpen(true)} onLocationActions={handleOpenLocationActions} onWhatsAppActions={handleWhatsAppActions} onFinalizePendingPayment={(billing) => setFinalizePaymentModalState({ isOpen: true, billing })} areValuesHidden={areValuesHidden} onPendingPaymentAction={(customer, billing) => setPendingPaymentActionModalState({ isOpen: true, customer, pendingBilling: billing })} onOpenRouteCreator={() => setIsRouteCreationModalOpen(true)} onSaveRoute={handleSaveRoute} onDeleteRoute={handleDeleteRoute} />;
             case 'COBRANCAS': return <CobrancasView billings={billings} customers={customers} debtPayments={debtPayments} onShowActions={(billing) => setReceiptActionsModalState({ isOpen: true, billing, isProvisional: false })} onEditBilling={handleOpenEditBillingModal} onDeleteBilling={handleDeleteBilling} onFinalizePayment={(billing) => setFinalizePaymentModalState({ isOpen: true, billing })} onPayDebtCustomer={handleOpenDebtPaymentModal} areValuesHidden={areValuesHidden} />;
-            case 'EQUIPAMENTOS': return <EquipamentosView customers={customers} showNotification={showNotification} onOpenLabelGenerator={() => setLabelGenerationModalState({ isOpen: true })} />;
             case 'DESPESAS': return <DespesasView expenses={expenses} onAddExpense={handleAddExpense} onDeleteExpense={handleDeleteExpense} areValuesHidden={areValuesHidden} />;
             case 'ROTAS': return <RotasView customers={customers} />;
             case 'RELATORIOS': return <RelatoriosView customers={customers} billings={billings} expenses={expenses} debtPayments={debtPayments} onThermalPrint={handleThermalPrint} areValuesHidden={areValuesHidden} showNotification={showNotification} />;
@@ -1577,7 +1599,7 @@ const App: React.FC = () => {
 
     return (
         <div className="flex h-full">
-            <Sidebar user={user} currentView={currentView} setView={setView} isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} onOpenScanner={() => setQrScannerModalOpen(true)} />
+            <Sidebar user={user} currentView={currentView} setView={setView} isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} onOpenFastBilling={() => setIsFastBillingModalOpen(true)} />
             <div className="flex-1 flex flex-col h-full">
                  <MobileHeader 
                     title={viewTitles[currentView]} 
@@ -1609,7 +1631,7 @@ const App: React.FC = () => {
             {shareCustomerModalState.isOpen && shareCustomerModalState.customer && <ShareCustomerModal isOpen={shareCustomerModalState.isOpen} onClose={() => setShareCustomerModalState({ isOpen: false, customer: null })} customer={shareCustomerModalState.customer} showNotification={showNotification} onPrintCustomer={handlePrintCustomerSheet} />}
             {labelGenerationModalState.isOpen && <LabelGenerationModal isOpen={labelGenerationModalState.isOpen} onClose={() => setLabelGenerationModalState({isOpen: false})} customers={customers} showNotification={showNotification} onConfirm={() => {}} />}
             {editBillingModalState.isOpen && editBillingModalState.billing && <EditBillingModal isOpen={editBillingModalState.isOpen} onClose={() => setEditBillingModalState({ isOpen: false, billing: null })} onConfirm={handleUpdateBilling} billing={editBillingModalState.billing} customers={customers} billings={billings} />}
-            {qrScannerModalOpen && <QrScannerModal isOpen={qrScannerModalOpen} onClose={() => setQrScannerModalOpen(false)} onScanSuccess={(id) => { const customer = customers.find(c => c.equipment?.some(e => e.id === id)); setFocusedCustomer(customer || null); setQrScannerModalOpen(false); }} showNotification={showNotification} />}
+            {isFastBillingModalOpen && <FastBillingModal isOpen={isFastBillingModalOpen} onClose={() => setIsFastBillingModalOpen(false)} onConfirm={handleConfirmFastBilling} />}
             {thermalPrintModalState.isOpen && <ThermalPrintActionsModal isOpen={thermalPrintModalState.isOpen} onClose={() => setThermalPrintModalState({ isOpen: false, title: '', content: '' })} title={thermalPrintModalState.title} content={thermalPrintModalState.content} onShare={shareText} onPrintSunmi={handlePrintSunmi} isSharing={isSharing} />}
             {locationActionsModalState.isOpen && locationActionsModalState.customer && <LocationActionsModal isOpen={locationActionsModalState.isOpen} onClose={() => setLocationActionsModalState({ isOpen: false, customer: null })} customer={locationActionsModalState.customer} />}
             {saveLocationModalState.isOpen && saveLocationModalState.customer && <ActionModal isOpen={saveLocationModalState.isOpen} onClose={() => setSaveLocationModalState({ isOpen: false, customer: null })} onConfirm={() => handleSaveLocation(saveLocationModalState.customer!)} title="Salvar Localização" confirmText="Salvar"><p>Deseja salvar a sua localização atual como o endereço para <strong>{saveLocationModalState.customer.name}</strong>?</p></ActionModal>}

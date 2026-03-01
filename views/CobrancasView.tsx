@@ -136,7 +136,6 @@ const BillingsList: React.FC<BillingsListProps> = ({ billings, onEdit, onDelete,
                     </div>
                  )
             ) : <p className="text-center py-16 text-slate-500 dark:text-slate-400 italic">Nenhuma cobrança encontrada.</p>}
-            {billings.length > 0 && <div className="mt-4 pt-4 border-t-2 border-slate-300 dark:border-slate-600 flex flex-wrap justify-between items-baseline gap-x-4 font-bold text-lg"><span>TOTAL ARRECADADO</span><span className="font-mono text-lime-600 dark:text-lime-400">{areValuesHidden ? 'R$ •••,••' : `R$ ${totalBilled.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span></div>}
         </div>
 
         {/* Desktop View: Table */}
@@ -196,13 +195,6 @@ const BillingsList: React.FC<BillingsListProps> = ({ billings, onEdit, onDelete,
                            <tr><td colSpan={6} className="text-center py-16 text-slate-500 dark:text-slate-400 italic">Nenhuma cobrança encontrada.</td></tr>
                         )}
                     </tbody>
-                    <tfoot className="bg-slate-100 dark:bg-slate-700/50 font-bold text-slate-900 dark:text-white">
-                        <tr>
-                            <td colSpan={4} className="text-right px-6 py-3 uppercase">Total Arrecadado (Filtrado)</td>
-                            <td className="text-right px-6 py-3 font-mono text-lg text-lime-600 dark:text-lime-400">{areValuesHidden ? 'R$ •••,••' : `R$ ${totalBilled.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
                 </table>
             </div>
         </div>
@@ -505,7 +497,8 @@ const CobrancasView: React.FC<CobrancasViewProps> = ({
                                     </button>
                                 )}
                             </div>
-                        ))}
+                        ))
+}
                     </div>
                 </div>
             )}
