@@ -22,6 +22,7 @@ interface CobrancasViewProps {
     onDeleteBilling: (billingId: string) => void;
     onFinalizePayment: (billing: Billing) => void;
     onPayDebtCustomer: (customer: Customer) => void;
+    onPrintDebtStatement: (customer: Customer) => void;
     areValuesHidden: boolean;
 }
 
@@ -86,6 +87,7 @@ interface DebtorsListProps {
     totalDebt: number;
     onPrint: () => void;
     onPayDebtCustomer: (customer: Customer) => void;
+    onPrintDebtStatement: (customer: Customer) => void;
     areValuesHidden: boolean;
 }
 
@@ -201,7 +203,7 @@ const BillingsList: React.FC<BillingsListProps> = ({ billings, onEdit, onDelete,
     </>
 );
 
-const DebtorsList: React.FC<DebtorsListProps> = ({ debtorCustomers, totalDebt, onPrint, onPayDebtCustomer, areValuesHidden }) => (
+const DebtorsList: React.FC<DebtorsListProps> = ({ debtorCustomers, totalDebt, onPrint, onPayDebtCustomer, onPrintDebtStatement, areValuesHidden }) => (
     <div className="bg-white/75 dark:bg-slate-800/75 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div className="flex justify-between items-center p-4 bg-slate-100 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Clientes Devedores ({debtorCustomers.length})</h3>
@@ -224,12 +226,18 @@ const DebtorsList: React.FC<DebtorsListProps> = ({ debtorCustomers, totalDebt, o
                            {areValuesHidden ? 'R$ •••,••' : `R$ ${customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                         </p>
                     </div>
-                    <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700 flex items-center gap-2">
                         <button
                             onClick={() => onPayDebtCustomer(customer)}
-                            className="w-full bg-amber-600 text-white font-bold py-2 px-3 rounded-md hover:bg-amber-500 text-sm flex items-center justify-center gap-2"
+                            className="flex-1 bg-amber-600 text-white font-bold py-2 px-3 rounded-md hover:bg-amber-500 text-sm flex items-center justify-center gap-2"
                         >
-                           <CurrencyDollarIcon className="w-5 h-5" /> Pagar/Adicionar Dívida
+                           <CurrencyDollarIcon className="w-5 h-5" /> Pagar/Adicionar
+                        </button>
+                        <button
+                            onClick={() => onPrintDebtStatement(customer)}
+                            className="flex-1 bg-slate-600 text-white font-bold py-2 px-3 rounded-md hover:bg-slate-500 text-sm flex items-center justify-center gap-2"
+                        >
+                           <PrinterIcon className="w-5 h-5" /> Demonstrativo
                         </button>
                     </div>
                 </div>
@@ -253,7 +261,12 @@ const DebtorsList: React.FC<DebtorsListProps> = ({ debtorCustomers, totalDebt, o
                             <td className="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{customer.name}</td>
                             <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{customer.cidade}</td>
                             <td className="px-6 py-4 text-right font-mono font-bold text-red-500 dark:text-red-400">{areValuesHidden ? 'R$ •••,••' : `R$ ${customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td>
-                            <td className="px-6 py-4 text-center"><button onClick={() => onPayDebtCustomer(customer)} className="bg-amber-600 text-white font-bold py-1 px-3 rounded-md hover:bg-amber-500 text-xs">Pagar/Adicionar Dívida</button></td>
+                            <td className="px-6 py-4 text-center">
+                                <div className="flex justify-center items-center gap-2">
+                                    <button onClick={() => onPayDebtCustomer(customer)} className="bg-amber-600 text-white font-bold py-1 px-3 rounded-md hover:bg-amber-500 text-xs">Pagar/Adicionar</button>
+                                    <button onClick={() => onPrintDebtStatement(customer)} className="bg-slate-600 text-white font-bold py-1 px-3 rounded-md hover:bg-slate-500 text-xs">Demonstrativo</button>
+                                </div>
+                            </td>
                         </tr>
                     )) : (<tr><td colSpan={4} className="text-center py-16 text-slate-500 dark:text-slate-400 italic">Nenhum cliente com dívida pendente.</td></tr>)}
                 </tbody>
@@ -280,6 +293,7 @@ const CobrancasView: React.FC<CobrancasViewProps> = ({
     onDeleteBilling,
     onFinalizePayment,
     onPayDebtCustomer,
+    onPrintDebtStatement,
     areValuesHidden,
 }) => {
     const [activeTab, setActiveTab] = useState<MainTab>('billings');
@@ -505,7 +519,7 @@ const CobrancasView: React.FC<CobrancasViewProps> = ({
 
 
             {activeTab === 'billings' && <BillingsList billings={completedBillings} onEdit={onEditBilling} onDelete={setDeletingBilling} onShowActions={onShowActions} totalBilled={totalBilled} handleSort={handleSort} renderSortArrow={renderSortArrow} getNetBilledAmount={getNetBilledAmount} areValuesHidden={areValuesHidden} />}
-            {activeTab === 'debtors' && <DebtorsList debtorCustomers={debtorCustomers} totalDebt={totalDebt} onPrint={handlePrintDebtors} onPayDebtCustomer={onPayDebtCustomer} areValuesHidden={areValuesHidden} />}
+            {activeTab === 'debtors' && <DebtorsList debtorCustomers={debtorCustomers} totalDebt={totalDebt} onPrint={handlePrintDebtors} onPayDebtCustomer={onPayDebtCustomer} onPrintDebtStatement={onPrintDebtStatement} areValuesHidden={areValuesHidden} />}
             
             {deletingBilling && <ActionModal isOpen={!!deletingBilling} onClose={() => setDeletingBilling(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" confirmText="Sim, Excluir"><p>Tem certeza que deseja excluir esta cobrança para <strong>{deletingBilling.customerName}</strong> no valor de <strong>R$ {deletingBilling.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>?</p><p className="mt-2 text-amber-500 dark:text-amber-300">Esta ação irá reverter a leitura do relógio do equipamento e, se aplicável, o valor da dívida do cliente.</p></ActionModal>}
         </>

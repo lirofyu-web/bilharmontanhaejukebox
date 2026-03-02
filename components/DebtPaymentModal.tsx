@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Customer } from '../types';
 import { CurrencyDollarIcon } from './icons/CurrencyDollarIcon';
+import { PrinterIcon } from './icons/PrinterIcon'; // Import the printer icon
 import { safeParseFloat } from '../utils';
 
 interface DebtPaymentModalProps {
@@ -9,10 +10,11 @@ interface DebtPaymentModalProps {
   onClose: () => void;
   onConfirm: (details: { amountPaidDinheiro: number; amountPaidPix: number } | { amountToAdd: number }) => void;
   onForgiveDebt: (customer: Customer) => void;
+  onPrintStatement: (customer: Customer) => void; // Add the new prop
   customer: Customer;
 }
 
-const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({ isOpen, onClose, onConfirm, onForgiveDebt, customer }) => {
+const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({ isOpen, onClose, onConfirm, onForgiveDebt, onPrintStatement, customer }) => {
   const [paymentValues, setPaymentValues] = useState({ dinheiro: '', pix: '' });
   const [amountToAdd, setAmountToAdd] = useState('');
   const [error, setError] = useState('');
@@ -110,14 +112,26 @@ const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({ isOpen, onClose, on
              {error && <p className="text-red-400 text-xs mt-1 text-center">{error}</p>}
         </div>
         <div className="p-6 bg-slate-800/50 rounded-b-lg flex justify-between items-center gap-4">
-          {hasDebt ? (
-            <button 
-              onClick={() => onForgiveDebt(customer)}
-              className="bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-500 transition-colors text-sm"
-            >
-              Perdoar Dívida
-            </button>
-          ) : <div />}
+          <div className="flex gap-2">
+            {hasDebt && (
+                <>
+                    <button 
+                        onClick={() => onForgiveDebt(customer)}
+                        className="bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-500 transition-colors text-sm"
+                    >
+                        Perdoar Dívida
+                    </button>
+                    <button 
+                        onClick={() => { onPrintStatement(customer); onClose(); }}
+                        className="bg-sky-600 text-white font-bold py-2 px-4 rounded-md hover:bg-sky-500 transition-colors text-sm inline-flex items-center gap-2"
+                        title="Imprimir Demonstrativo de Dívida"
+                    >
+                        <PrinterIcon className="w-4 h-4" />
+                        <span>Demonstrativo</span>
+                    </button>
+                </>
+            )}
+          </div>
           <div className="flex gap-4">
             <button onClick={onClose} className="bg-slate-600 text-white font-bold py-2 px-6 rounded-md hover:bg-slate-500 transition-colors">Cancelar</button>
             <button 

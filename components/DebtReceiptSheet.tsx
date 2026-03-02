@@ -51,9 +51,20 @@ const DebtReceiptSheet: React.FC<DebtReceiptSheetProps> = ({ debtPayment, qrCode
                 <PixQrCode />
             )}
             
-            <div className="text-center mt-4 pt-2 border-t border-dashed border-black">
-                <p className="font-bold text-xs">MONTANHA BILHAR & JUKEBOX</p>
-                <p className="text-xs">DIVERSAO LEVADO A SERIO.</p>
+             <hr className="border-dashed border-black my-2" />
+
+            <div className="text-xs text-center mt-2">
+                <p className="font-bold">BILHAR MONTANHA</p>
+                <p>CNPJ: 76.089.440/0001-29</p>
+                <p>Jaguapitã - PR</p>
+                <p>Contato: (43) 99958-1993</p>
+            </div>
+
+            <hr className="border-dashed border-black my-2" />
+
+            <div className="text-xs text-center mt-4">
+                <p className="font-bold">MONTANHA BILHAR E JUKEBOX</p>
+                <p>DIVERSÃO LEVADO A SÉRIO</p>
             </div>
         </div>
     );

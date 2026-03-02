@@ -164,7 +164,8 @@ ${qrData}
 }
 
 export function generateCustomerShareText(customer: Customer): string {
-  let text = `*Dados do Cliente - Montanha Bilhar & Jukebox*\n\n`;
+  let text = `*MONTANHA BILHAR E JUKEBOX*\nCNPJ: 76.089.440/0001-29 | Jaguapitã - PR | (43) 99958-1993\n*DIVERSÃO LEVADO A SÉRIO*\n\n`;
+  text += `*Dados do Cliente*\n\n`;
   text += `*Nome:* ${customer.name}\n`;
   text += `*Cidade:* ${customer.cidade}\n`;
   if (customer.endereco) text += `*Endereço:* ${customer.endereco}\n`;
