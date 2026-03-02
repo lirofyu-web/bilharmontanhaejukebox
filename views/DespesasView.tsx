@@ -93,8 +93,6 @@ const DespesasView: React.FC<DespesasViewProps> = ({ expenses, onAddExpense, onD
       setSortDirection('desc');
     }
   }, [sortKey]);
-
-  const totalExpenses = useMemo(() => expenses.reduce((sum, expense) => sum + expense.amount, 0), [expenses]);
   
   const renderSortArrow = (key: SortKey) => {
     if (sortKey !== key) return null;
@@ -143,12 +141,6 @@ const DespesasView: React.FC<DespesasViewProps> = ({ expenses, onAddExpense, onD
       {/* Mobile Card View */}
       <div className="md:hidden space-y-3">
         {sortedExpenses.length > 0 ? sortedExpenses.map(renderExpenseCard) : <p className="text-center py-10 text-slate-500 dark:text-slate-400">Nenhuma despesa registrada.</p>}
-        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex flex-wrap justify-between items-baseline gap-x-4 font-bold text-slate-900 dark:text-white">
-            <span className="text-lg">TOTAL DE DESPESAS</span>
-            <span className="font-mono text-xl text-red-600 dark:text-red-400">
-                {areValuesHidden ? 'R$ •••,••' : `R$ ${totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            </span>
-        </div>
       </div>
 
       {/* Desktop Table View */}
@@ -176,12 +168,6 @@ const DespesasView: React.FC<DespesasViewProps> = ({ expenses, onAddExpense, onD
               <tr><td colSpan={5} className="text-center py-16 text-slate-500 dark:text-slate-400">Nenhuma despesa registrada.</td></tr>
             )}
           </tbody>
-          <tfoot className="bg-slate-100 dark:bg-slate-700/50"><tr className="font-bold text-slate-900 dark:text-white">
-              <td colSpan={3} className="text-right px-6 py-3 uppercase">Total de Despesas</td>
-              <td className="text-right px-6 py-3 font-mono text-lg text-red-600 dark:text-red-400">
-                {areValuesHidden ? 'R$ •••,••' : `R$ ${totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-              </td><td></td>
-          </tr></tfoot>
         </table></div>
       </div>
     </div>

@@ -2,10 +2,8 @@
 import React from 'react';
 import { Customer } from '../types';
 import { PrinterIcon } from './icons/PrinterIcon';
-import { DocumentDuplicateIcon } from './icons/DocumentDuplicateIcon';
 import { WhatsAppIcon } from './icons/WhatsAppIcon';
-import { QrCodeIcon } from './icons/QrCodeIcon';
-import { generateCustomerShareText, generateCustomerLabelText } from '../utils/receiptGenerator';
+import { generateCustomerShareText } from '../utils/receiptGenerator';
 
 
 interface ShareCustomerModalProps {
@@ -17,30 +15,6 @@ interface ShareCustomerModalProps {
 }
 
 const ShareCustomerModal: React.FC<ShareCustomerModalProps> = ({ isOpen, onClose, customer, showNotification, onPrintCustomer }) => {
-  
-  const handleCopyJson = () => {
-    const customerDataToShare = {
-      name: customer.name,
-      cpfRg: customer.cpfRg,
-      cidade: customer.cidade,
-      endereco: customer.endereco,
-      telefone: customer.telefone,
-      linhaNumero: customer.linhaNumero,
-      latitude: customer.latitude,
-      longitude: customer.longitude,
-      equipment: customer.equipment.map(({ id, ...rest }) => rest) // Remove runtime ID
-    };
-
-    const textToCopy = JSON.stringify(customerDataToShare, null, 2);
-
-    navigator.clipboard.writeText(textToCopy).then(() => {
-        showNotification('Dados do cliente copiados para a área de transferência!');
-    }).catch(err => {
-        showNotification('Erro ao copiar dados.', 'error');
-        console.error('Could not copy text: ', err);
-    });
-    onClose();
-  };
   
   const handlePrint = () => {
     onPrintCustomer(customer);
@@ -72,26 +46,6 @@ const ShareCustomerModal: React.FC<ShareCustomerModalProps> = ({ isOpen, onClose
     }
   };
   
-  const handleShareThermalLabel = async () => {
-      const textToShare = generateCustomerLabelText(customer);
-      try {
-        if (navigator.share) {
-          await navigator.share({
-            title: `Etiqueta Cliente - ${customer.name}`,
-            text: textToShare,
-          });
-        } else {
-          await navigator.clipboard.writeText(textToShare);
-          showNotification('Etiqueta copiada! O compartilhamento não é suportado.', 'success');
-        }
-      } catch (error: any) {
-        if (error.name !== 'AbortError') {
-          showNotification(`Erro ao compartilhar: ${error.message}`, 'error');
-        }
-      }
-      onClose();
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -115,26 +69,6 @@ const ShareCustomerModal: React.FC<ShareCustomerModalProps> = ({ isOpen, onClose
                 <div>
                     <h3 className="font-bold text-white">Gerar Ficha (PDF/Impressão)</h3>
                     <p className="text-sm text-slate-400">Abre a opção de impressão para salvar como PDF ou imprimir em A4.</p>
-                </div>
-            </button>
-            <button
-                onClick={handleShareThermalLabel}
-                className="w-full flex items-center gap-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700 text-left hover:bg-slate-700/50 hover:border-blue-500 transition-colors"
-            >
-                <QrCodeIcon className="w-8 h-8 text-blue-400 flex-shrink-0" />
-                <div>
-                    <h3 className="font-bold text-white">Etiqueta (Impressora Térmica)</h3>
-                    <p className="text-sm text-slate-400">Gera um texto com ID para ser impresso como etiqueta/QR Code.</p>
-                </div>
-            </button>
-            <button
-                onClick={handleCopyJson}
-                className="w-full flex items-center gap-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700 text-left hover:bg-slate-700/50 hover:border-lime-500 transition-colors"
-            >
-                <DocumentDuplicateIcon className="w-8 h-8 text-lime-400 flex-shrink-0" />
-                <div>
-                    <h3 className="font-bold text-white">Copiar Dados (JSON)</h3>
-                    <p className="text-sm text-slate-400">Copia os dados brutos. Útil para backups ou importação em texto.</p>
                 </div>
             </button>
             <button

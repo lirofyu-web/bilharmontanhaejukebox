@@ -468,6 +468,7 @@ type MonthlyStats = {
     revenueGruaPix: number;
     totalRevenueGrua: number;
     expensesGrua: number;
+    expensesGeral: number;
     balanceGrua: number;
     totalOutstandingDebt: number;
     totalDebtReceived: number;
@@ -520,7 +521,8 @@ const DashboardView: React.FC<DashboardViewProps> = React.memo(({ billings, expe
         const expensesMesa = monthlyExpenses.filter(e => e.category === 'mesa').reduce((sum, e) => sum + e.amount, 0);
         const expensesJukebox = monthlyExpenses.filter(e => e.category === 'jukebox').reduce((sum, e) => sum + e.amount, 0);
         const expensesGrua = monthlyExpenses.filter(e => e.category === 'grua').reduce((sum, e) => sum + e.amount, 0);
-        const totalExpenses = expensesMesa + expensesJukebox + expensesGrua + monthlyExpenses.filter(e => e.category === 'geral').reduce((sum, e) => sum + e.amount, 0);
+        const expensesGeral = monthlyExpenses.filter(e => e.category === 'geral' || !e.category).reduce((sum, e) => sum + e.amount, 0);
+        const totalExpenses = expensesMesa + expensesJukebox + expensesGrua + expensesGeral;
         
         // Revenue for Mesas (Only direct payments)
         const revenueMesaDinheiro = monthlyBillings.filter(b => b.equipmentType === 'mesa').reduce((sum, b) => sum + (b.valorPagoDinheiro || 0), 0);
@@ -570,6 +572,7 @@ const DashboardView: React.FC<DashboardViewProps> = React.memo(({ billings, expe
             revenueGruaPix,
             totalRevenueGrua,
             expensesGrua,
+            expensesGeral,
             balanceGrua,
             totalOutstandingDebt,
             totalDebtReceived,
@@ -626,12 +629,33 @@ const DashboardView: React.FC<DashboardViewProps> = React.memo(({ billings, expe
                         className="flex-col !items-start"
                     />
                 </InfoCard>
-                 <InfoCard title="Despesas Totais" icon={<CalculatorIcon className="w-6 h-6 text-red-500" />} className="lg:col-span-2">
-                    <InfoRow 
-                        label="Total de Despesas no Período"
-                        value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
-                        valueColor="text-red-600 dark:text-red-400 text-2xl"
-                        className="flex-col !items-start"
+                <InfoCard title="Despesas no Período" icon={<CalculatorIcon className="w-6 h-6 text-red-500" />} className="lg:col-span-2">
+                    <InfoRow
+                        label="Mesa de Sinuca"
+                        value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.expensesMesa.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                        valueColor="text-slate-500 dark:text-slate-400"
+                    />
+                    <InfoRow
+                        label="Jukebox"
+                        value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.expensesJukebox.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                        valueColor="text-slate-500 dark:text-slate-400"
+                    />
+                    <InfoRow
+                        label="Grua de Pelúcia"
+                        value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.expensesGrua.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                        valueColor="text-slate-500 dark:text-slate-400"
+                    />
+                    <InfoRow
+                        label="Geral"
+                        value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.expensesGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                        valueColor="text-slate-500 dark:text-slate-400"
+                    />
+                     <div className="border-t border-slate-200 dark:border-slate-700 my-3"></div>
+                    <InfoRow
+                        label="Total"
+                        value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                        valueColor="text-red-600 dark:text-red-400 text-xl"
+                        className="!items-baseline"
                     />
                 </InfoCard>
                 <InfoCard title="Dívidas Recebidas" icon={<CurrencyDollarIcon className="w-6 h-6 text-emerald-500" />} className="lg:col-span-2">

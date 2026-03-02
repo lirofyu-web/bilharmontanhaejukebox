@@ -1,3 +1,4 @@
+
 // App.tsx
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { User, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
@@ -33,6 +34,8 @@ import { sunmiPrinterService } from './utils/sunmiPrinter';
 import ActionFeedbackOverlay from './components/SuccessAnimationOverlay';
 import { optimizeRoute } from './utils/routeOptimizer';
 import { playSuccessSound, unlockAudio } from './utils/soundPlayer';
+import { exportElementAsPDF } from './utils/pdfGenerator';
+import { DownloadIcon } from './components/icons/DownloadIcon';
 
 // Modals
 import BillingModal from './components/BillingModal';
@@ -124,19 +127,43 @@ const generatePrintableHtml = (title: string, content: string): string => {
   `;
 };
 
-const PrintPreviewOverlay: React.FC<{ customer: Customer; onCancel: () => void }> = ({ customer, onCancel }) => {
-  const handlePrint = () => window.print();
-  useEffect(() => {
-    window.addEventListener('afterprint', onCancel);
-    return () => window.removeEventListener('afterprint', onCancel);
-  }, [onCancel]);
+const PrintPreviewOverlay: React.FC<{ customer: Customer; onCancel: () => void; showNotification: (message: string, type?: 'success' | 'error') => void; }> = ({ customer, onCancel, showNotification }) => {
+  const printContentRef = useRef<HTMLDivElement>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    if (!printContentRef.current || isGenerating) return;
+    
+    setIsGenerating(true);
+    showNotification('Gerando PDF, por favor aguarde...', 'success');
+
+    try {
+      const fileName = `ficha-${customer.name.toLowerCase().replace(/\s+/g, '-')}.pdf`;
+      await exportElementAsPDF(printContentRef.current, fileName);
+      showNotification('PDF gerado e download iniciado!', 'success');
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      showNotification(error instanceof Error ? error.message : 'Ocorreu um erro desconhecido.', 'error');
+    } finally {
+      setIsGenerating(false);
+      onCancel(); 
+    }
+  };
+
   return (
-    <div className="print-overlay fixed inset-0 bg-slate-200 dark:bg-slate-900 z-[100] flex flex-col">
-      <header className="print-controls no-print sticky top-0 bg-white/90 dark:bg-slate-800/90 p-4 shadow-md flex justify-center gap-4 flex-shrink-0">
-        <button onClick={onCancel} className="bg-slate-500 text-white font-bold py-2 px-6 rounded-md hover:bg-slate-400">Cancelar</button>
-        <button onClick={handlePrint} className="bg-[var(--color-primary)] text-[var(--color-primary-text)] font-bold py-2 px-6 rounded-md hover:bg-[var(--color-primary-hover)] flex items-center gap-2"><PrinterIcon className="w-5 h-5" />Salvar PDF / Imprimir</button>
+    <div className="print-overlay fixed inset-0 bg-slate-200 dark:bg-slate-900 z-[100] flex flex-col no-print">
+      <header className="print-controls sticky top-0 bg-white/90 dark:bg-slate-800/90 p-4 shadow-md flex justify-center gap-4 flex-shrink-0">
+        <button onClick={onCancel} disabled={isGenerating} className="bg-slate-500 text-white font-bold py-2 px-6 rounded-md hover:bg-slate-400 disabled:bg-slate-600 disabled:cursor-not-allowed">
+          Cancelar
+        </button>
+        <button onClick={handleDownloadPdf} disabled={isGenerating} className="bg-[var(--color-primary)] text-[var(--color-primary-text)] font-bold py-2 px-6 rounded-md hover:bg-[var(--color-primary-hover)] flex items-center gap-2 disabled:bg-gray-500 disabled:cursor-wait">
+          <DownloadIcon className="w-5 h-5" />
+          {isGenerating ? 'Gerando...' : 'Baixar PDF'}
+        </button>
       </header>
-      <div className="print-content overflow-y-auto flex-grow"><CustomerSheet customer={customer} /></div>
+      <div ref={printContentRef} className="print-content overflow-y-auto flex-grow bg-white dark:bg-slate-800">
+        <CustomerSheet customer={customer} />
+      </div>
     </div>
   );
 };
@@ -1624,7 +1651,7 @@ const App: React.FC = () => {
 
             {actionFeedbackState.isOpen && <ActionFeedbackOverlay isOpen={actionFeedbackState.isOpen} onEnd={handleAnimationEnd} variant={actionFeedbackState.variant} message={actionFeedbackState.message} />}
             {focusedCustomer && <FullScreenCustomerView customer={focusedCustomer} onClose={() => setFocusedCustomer(null)} hasActiveWarning={warnings.some(w => w.customerId === focusedCustomer.id && !w.isResolved)} onBill={handleOpenBillingModal} onEdit={handleOpenEditCustomerModal} onDelete={handleOpenDeleteModal} onPayDebt={handleOpenDebtPaymentModal} onHistory={handleOpenHistoryModal} onShare={handleOpenShareCustomerModal} onLocationActions={handleOpenLocationActions} onWhatsAppActions={handleWhatsAppActions} billings={billings} debtPayments={debtPayments} onFinalizePendingPayment={(billing) => setFinalizePaymentModalState({ isOpen: true, billing })} onPendingPaymentAction={(customer, billing) => setPendingPaymentActionModalState({ isOpen: true, customer, pendingBilling: billing })} />}
-            {customerToPrint && <PrintPreviewOverlay customer={customerToPrint} onCancel={() => setCustomerToPrint(null)} />}
+            {customerToPrint && <PrintPreviewOverlay customer={customerToPrint} onCancel={() => setCustomerToPrint(null)} showNotification={showNotification} />}
         </div>
     );
 };
