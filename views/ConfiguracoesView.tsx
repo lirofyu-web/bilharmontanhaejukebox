@@ -13,8 +13,6 @@ import { UserIcon } from '../components/icons/UserIcon';
 import { XIcon } from '../components/icons/XIcon';
 import { LockClosedIcon } from '../components/icons/LockClosedIcon';
 import { DatabaseIcon } from '../components/icons/DatabaseIcon';
-import { BellIcon } from '../components/icons/BellIcon';
-import NotificationSwitch from '../components/NotificationSwitch';
 
 interface ConfiguracoesViewProps {
   onExportData: () => void;
@@ -253,21 +251,6 @@ const ConfiguracoesView: React.FC<ConfiguracoesViewProps> = ({
               </button>
             )}
           </div>
-        </section>
-
-        {/* Notifications Section */}
-        <section>
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-6 border-b border-slate-200 dark:border-slate-700 pb-2">Notificações</h2>
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700">
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-                    <BellIcon className="w-6 h-6 text-slate-500 dark:text-slate-400" />
-                    Alertas e Lembretes
-                </h3>
-                <p className="text-slate-500 dark:text-slate-400 mb-4">
-                    Receba notificações push no seu dispositivo para ser lembrado de visitas, cobranças ou avisos importantes.
-                </p>
-                <NotificationSwitch />
-            </div>
         </section>
 
         {/* Storage Section */}

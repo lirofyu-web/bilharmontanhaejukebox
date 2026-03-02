@@ -4,6 +4,7 @@ import { MenuIcon } from './icons/MenuIcon';
 import { InstallIcon } from './icons/InstallIcon';
 import { LockClosedIcon } from './icons/LockClosedIcon';
 import { LockOpenIcon } from './icons/LockOpenIcon';
+import AppLogo from './AppLogo'; // Import the new AppLogo component
 
 interface MobileHeaderProps {
     title: string;
@@ -25,7 +26,9 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ title, onMenuClick, deferre
             >
                 <MenuIcon className="w-6 h-6" />
             </button>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white flex-grow">{title}</h1>
+            <div className="flex-grow flex justify-center">
+              <AppLogo />
+            </div>
             
             {isPrivacyModeEnabled && (
                  <button onClick={onToggleLock} className="p-2 text-slate-600 dark:text-slate-300" aria-label={isPrivacyUnlocked ? "Ocultar valores" : "Mostrar valores"}>

@@ -181,9 +181,7 @@ const InfoCard: React.FC<InfoCardProps> = React.memo(({ title, children, icon })
           {title}
         </h3>
         <div className="flex-grow">
-            <dl className="space-y-3">
-                {children}
-            </dl>
+            {children}
         </div>
     </div>
 ));
@@ -214,6 +212,7 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
   };
 
   const [dateRange, setDateRange] = useState(getInitialDateRange);
+  const [expenseCategory, setExpenseCategory] = useState<'all' | Expense['category'] | 'outra'>('all');
   const [isCraneReportModalOpen, setIsCraneReportModalOpen] = useState(false);
   const [isMesaReportModalOpen, setIsMesaReportModalOpen] = useState(false);
   const [isJukeboxReportModalOpen, setIsJukeboxReportModalOpen] = useState(false);
@@ -268,7 +267,14 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
     const totalAluguelPagoGrua = periodGruaBillings.reduce((sum, b) => sum + (b.aluguelValor || 0), 0);
     const revenueGruaFirma = periodGruaBillings.reduce((sum, b) => sum + b.valorTotal, 0);
     
-    const totalExpenses = periodExpenses.reduce((sum, e) => sum + e.amount, 0);
+    // Filtered expenses for the new report
+    const filteredPeriodExpenses = periodExpenses.filter(e => {
+        if (expenseCategory === 'all') return true;
+        if (expenseCategory === 'outra') return !['mesa', 'jukebox', 'grua'].includes(e.category);
+        return e.category === expenseCategory;
+    });
+
+    const totalFilteredExpenses = filteredPeriodExpenses.reduce((sum, e) => sum + e.amount, 0);
     
     return {
       revenueMesaDinheiro,
@@ -282,17 +288,17 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
       revenueGruaEspecie,
       revenueGruaFirma,
       totalAluguelPagoGrua,
-      totalExpenses,
+      totalFilteredExpenses,
       periodMesaBillings,
       periodJukeboxBillings,
       periodGruaBillings,
       periodDebtPayments,
-      periodExpenses,
       periodExpensesMesa,
       periodExpensesJukebox,
       periodExpensesGrua,
+      filteredPeriodExpenses,
     };
-  }, [billings, expenses, debtPayments, dateRange, customers]);
+  }, [billings, expenses, debtPayments, dateRange, expenseCategory]);
   
   const printReport = useCallback((title: string, content: string, customDateRange?: string) => {
     const startDate = dateRange.start ? new Date(dateRange.start + 'T00:00:00').toLocaleDateString('pt-BR') : 'Início';
@@ -623,7 +629,7 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
     const content = `
       <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 10pt; color: #333; }
-        @page { size: A4 landscape; margin: 15mm; }
+        @page { size: A4 portrait; margin: 15mm; }
         h3 { text-align: left; font-size: 14pt; color: #333; margin-bottom: 10px; }
         table { width: 100%; border-collapse: collapse; margin: 0 auto 20px auto; font-size: 10pt; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: center; }
@@ -704,6 +710,66 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
       });
       setSlipsToPrint(slipsData);
   }, [billings, areValuesHidden, showNotification]);
+  
+  const handlePrintExpenseReport = useCallback(() => {
+    if (areValuesHidden) {
+        showNotification("Desative o Modo de Privacidade para imprimir relatórios.", "error");
+        return;
+    }
+    const data = [...stats.filteredPeriodExpenses].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const totalExpenses = stats.totalFilteredExpenses;
+    const categoryLabel = expenseCategory === 'all' ? 'Geral' : expenseCategory === 'outra' ? 'Outras' : expenseCategory.charAt(0).toUpperCase() + expenseCategory.slice(1);
+
+    const content = `
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 10pt; color: #333; }
+        @page { size: A4 portrait; margin: 15mm; }
+        h3 { text-align: left; font-size: 14pt; color: #333; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin: 0 auto 20px auto; font-size: 10pt; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: center; }
+        th { background-color: #fef2f2; color: #b91c1c; font-weight: bold; text-transform: uppercase; }
+        tr:nth-child(even) { background-color: #f8fafc; }
+        .currency { text-align: right; font-family: 'Courier New', monospace; }
+        .text-left { text-align: left; }
+        .no-records { padding: 20px; text-align: center; color: #777; font-style: italic; }
+        tfoot td { 
+          border-top: 2px solid #b91c1c;
+          font-weight: bold;
+          background-color: #fef2f2;
+          color: #b91c1c;
+          font-size: 12pt;
+        }
+      </style>
+      <h3>Relatório de Despesas - Categoria: ${categoryLabel}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th class="text-left">Descrição</th>
+            <th>Categoria</th>
+            <th class="currency">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.length > 0 ? data.map(e => `
+            <tr>
+              <td>${new Date(e.date).toLocaleDateString('pt-BR')}</td>
+              <td class="text-left">${e.description}</td>
+              <td>${e.category.charAt(0).toUpperCase() + e.category.slice(1)}</td>
+              <td class="currency">R$ ${e.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            </tr>
+          `).join('') : '<tr><td colspan="4" class="no-records">Nenhuma despesa no período e categoria selecionados.</td></tr>'}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" class="text-left">Total Geral</td>
+            <td class="currency">R$ ${totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          </tr>
+        </tfoot>
+      </table>
+    `;
+    printReport('Relatório de Despesas', content);
+  }, [areValuesHidden, showNotification, stats.filteredPeriodExpenses, stats.totalFilteredExpenses, expenseCategory, printReport]);
 
   return (
     <>
@@ -715,45 +781,75 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Filtrar por Período:</h3>
           <input type="date" name="start" value={dateRange.start} onChange={handleDateChange} className="bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500" />
           <span className="text-slate-500 dark:text-slate-400">até</span>
-          <input type="date" name="end" value={dateRange.end} onChange={handleDateChange} className="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500" />
+          <input type="date" name="end" value={dateRange.end} onChange={handleDateChange} className="w-full sm:w-auto bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <InfoCard title="Resumo: Mesas de Sinuca" icon={<BilliardIcon className="w-6 h-6 text-cyan-500" />}>
-          <InfoRow label="Receita (Dinheiro)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.revenueMesaDinheiro.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-sky-600 dark:text-sky-400" />
-          <InfoRow label="Receita (PIX)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.revenueMesaPix.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-lime-600 dark:text-lime-400" />
-          <InfoRow label="(-) Despesas (Mesas)" value={areValuesHidden ? 'R$ •••,••' : `- R$ ${stats.periodExpensesMesa.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-600 dark:text-red-400" />
-          <InfoRow label="(=) Lucro Líquido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${(stats.revenueMesaDinheiro + stats.revenueMesaPix - stats.periodExpensesMesa).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-green-500 dark:text-green-300 font-bold text-lg" />
+            <dl className="space-y-3">
+              <InfoRow label="Receita (Dinheiro)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.revenueMesaDinheiro.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-sky-600 dark:text-sky-400" />
+              <InfoRow label="Receita (PIX)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.revenueMesaPix.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-lime-600 dark:text-lime-400" />
+              <InfoRow label="(-) Despesas (Mesas)" value={areValuesHidden ? 'R$ •••,••' : `- R$ ${stats.periodExpensesMesa.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-600 dark:text-red-400" />
+              <InfoRow label="(=) Lucro Líquido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${(stats.revenueMesaDinheiro + stats.revenueMesaPix - stats.periodExpensesMesa).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-green-500 dark:text-green-300 font-bold text-lg" />
+            </dl>
            <button onClick={() => setIsMesaReportModalOpen(true)} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Mesas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-cyan-600 text-white font-bold py-2 px-4 rounded-md hover:bg-cyan-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><PrinterIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
         </InfoCard>
         
         <InfoCard title="Resumo: Jukebox" icon={<JukeboxIcon className="w-6 h-6 text-fuchsia-500" />}>
-           <InfoRow label="Receita (Dinheiro)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.revenueJukeboxDinheiro.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-sky-600 dark:text-sky-400" />
-           <InfoRow label="Receita (PIX)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.revenueJukeboxPix.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-lime-600 dark:text-lime-400" />
-          <InfoRow label="(-) Despesas (Jukebox)" value={areValuesHidden ? 'R$ •••,••' : `- R$ ${stats.periodExpensesJukebox.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-600 dark:text-red-400" />
-          <InfoRow label="(=) Lucro Líquido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${(stats.revenueJukeboxDinheiro + stats.revenueJukeboxPix - stats.periodExpensesJukebox).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-green-500 dark:text-green-300 font-bold text-lg" />
+            <dl className="space-y-3">
+               <InfoRow label="Receita (Dinheiro)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.revenueJukeboxDinheiro.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-sky-600 dark:text-sky-400" />
+               <InfoRow label="Receita (PIX)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.revenueJukeboxPix.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-lime-600 dark:text-lime-400" />
+              <InfoRow label="(-) Despesas (Jukebox)" value={areValuesHidden ? 'R$ •••,••' : `- R$ ${stats.periodExpensesJukebox.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-600 dark:text-red-400" />
+              <InfoRow label="(=) Lucro Líquido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${(stats.revenueJukeboxDinheiro + stats.revenueJukeboxPix - stats.periodExpensesJukebox).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-green-500 dark:text-green-300 font-bold text-lg" />
+            </dl>
            <button onClick={() => setIsJukeboxReportModalOpen(true)} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Jukebox"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-fuchsia-600 text-white font-bold py-2 px-4 rounded-md hover:bg-fuchsia-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><PrinterIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
         </InfoCard>
 
         <InfoCard title="Resumo: Gruas de Pelúcia" icon={<CraneIcon className="w-6 h-6 text-orange-500" />}>
-          <InfoRow label="Recebido (Espécie)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.revenueGruaEspecie.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-sky-600 dark:text-sky-400" />
-          <InfoRow label="Recebido (PIX)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.revenueGruaPix.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-lime-600 dark:text-lime-400" />
-          <InfoRow label="Total Arrecadado (Firma)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.revenueGruaFirma.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-green-600 dark:text-green-400" />
-          <InfoRow label="(-) Despesas (Gruas)" value={areValuesHidden ? 'R$ •••,••' : `- R$ ${stats.periodExpensesGrua.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-600 dark:text-red-400" />
-          <InfoRow label="(=) Lucro Líquido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${(stats.revenueGruaFirma - stats.periodExpensesGrua).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-green-500 dark:text-green-300 font-bold text-lg" />
+            <dl className="space-y-3">
+              <InfoRow label="Recebido (Espécie)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.revenueGruaEspecie.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-sky-600 dark:text-sky-400" />
+              <InfoRow label="Recebido (PIX)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.revenueGruaPix.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-lime-600 dark:text-lime-400" />
+              <InfoRow label="Total Arrecadado (Firma)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.revenueGruaFirma.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-green-600 dark:text-green-400" />
+              <InfoRow label="(-) Despesas (Gruas)" value={areValuesHidden ? 'R$ •••,••' : `- R$ ${stats.periodExpensesGrua.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-600 dark:text-red-400" />
+              <InfoRow label="(=) Lucro Líquido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${(stats.revenueGruaFirma - stats.periodExpensesGrua).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-green-500 dark:text-green-300 font-bold text-lg" />
+            </dl>
           <button onClick={() => setIsCraneReportModalOpen(true)} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Gruas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-orange-600 text-white font-bold py-2 px-4 rounded-md hover:bg-orange-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><PrinterIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
         </InfoCard>
         
         <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-8">
             <InfoCard title="Resumo: Dívidas Recebidas" icon={<CreditCardIcon className="w-6 h-6 text-emerald-500" />}>
-                <InfoRow label="Recebido (Dinheiro)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.debtReceivedDinheiro.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-sky-600 dark:text-sky-400" />
-                <InfoRow label="Recebido (PIX)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.debtReceivedPix.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-lime-600 dark:text-lime-400" />
-                <InfoRow label="(=) Total Recebido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.totalDebtReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-emerald-500 dark:text-emerald-300 font-bold text-lg" />
+                <dl className="space-y-3">
+                    <InfoRow label="Recebido (Dinheiro)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.debtReceivedDinheiro.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-sky-600 dark:text-sky-400" />
+                    <InfoRow label="Recebido (PIX)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.debtReceivedPix.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-lime-600 dark:text-lime-400" />
+                    <InfoRow label="(=) Total Recebido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.totalDebtReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-emerald-500 dark:text-emerald-300 font-bold text-lg" />
+                </dl>
                 <button onClick={handlePrintDebtPaymentsReport} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Dívidas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold py-2 px-4 rounded-md hover:bg-emerald-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><PrinterIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
             </InfoCard>
+
             <InfoCard title="Resumo Geral de Despesas" icon={<CalculatorIcon className="w-6 h-6 text-red-500" />}>
-                <InfoRow label="Total de Despesas" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-500 dark:text-red-300 font-bold text-lg" />
+                <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                        <label htmlFor="expense-category-filter" className="text-slate-500 dark:text-slate-400 mb-1 sm:mb-0">Filtrar Categoria:</label>
+                        <select 
+                            id="expense-category-filter"
+                            value={expenseCategory}
+                            onChange={(e) => setExpenseCategory(e.target.value as any)}
+                            className="bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500 w-full"
+                        >
+                            <option value="all">Todas</option>
+                            <option value="mesa">Mesa</option>
+                            <option value="jukebox">Jukebox</option>
+                            <option value="grua">Grua</option>
+                            <option value="outra">Outra</option>
+                        </select>
+                    </div>
+                    <dl>
+                        <InfoRow label="Total de Despesas" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.totalFilteredExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-500 dark:text-red-300 font-bold text-lg" />
+                    </dl>
+                    <button onClick={handlePrintExpenseReport} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Despesas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><PrinterIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
+                </div>
             </InfoCard>
+
         </div>
       </div>
       

@@ -6,7 +6,7 @@ import { UsersIcon } from './icons/UsersIcon';
 import { ReceiptIcon } from './icons/ReceiptIcon';
 import { CalculatorIcon } from './icons/CalculatorIcon';
 import { ChartBarIcon } from './icons/ChartBarIcon';
-import { LogoIcon } from './icons/LogoIcon';
+import AppLogo from './AppLogo'; // Import the new AppLogo component
 import { MapIcon } from './icons/MapIcon';
 import { CogIcon } from './icons/CogIcon';
 import { BilliardIcon } from './icons/BilliardIcon';
@@ -89,7 +89,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
 
             <aside className={`fixed inset-y-0 left-0 w-64 bg-white dark:bg-slate-800 p-4 flex flex-col border-r border-slate-200 dark:border-slate-700 z-30 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 no-print ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <div className="flex items-center justify-between mb-4">
-                    <LogoIcon className="w-auto h-10 pt-2" />
+                    <AppLogo />
                     <button 
                         onClick={toggleFullScreen}
                         className="p-2 rounded-full text-red-500 hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-500"

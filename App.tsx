@@ -18,7 +18,6 @@ import DespesasView from './views/DespesasView';
 import RotasView from './views/RotasView';
 import RelatoriosView from './views/RelatoriosView';
 import ConfiguracoesView from './views/ConfiguracoesView';
-import Notification from './components/Notification';
 import BottomNavBar from './components/BottomNavBar';
 import MobileHeader from './components/MobileHeader';
 import InstallPwaBanner from './components/InstallPwaBanner';
@@ -35,9 +34,7 @@ import ActionFeedbackOverlay from './components/SuccessAnimationOverlay';
 import { optimizeRoute } from './utils/routeOptimizer';
 import { playSuccessSound, unlockAudio } from './utils/soundPlayer';
 
-
 // Modals
-// FIX: Corrected import path for BillingModal to resolve module resolution error. The duplicate file at the root was likely causing the issue.
 import BillingModal from './components/BillingModal';
 import EditCustomerModal from './components/EditCustomerModal';
 import DebtPaymentModal from './components/DebtPaymentModal';
@@ -60,11 +57,6 @@ import PendingPaymentActionModal from './components/PendingPaymentActionModal';
 import RouteCreationModal from './components/RouteCreationModal';
 
 
-type NotificationState = {
-  message: string;
-  type: 'success' | 'error';
-} | null;
-
 const viewTitles: Record<View, string> = {
     'DASHBOARD': 'Dashboard',
     'CLIENTES': 'Clientes',
@@ -75,15 +67,14 @@ const viewTitles: Record<View, string> = {
     'CONFIGURACOES': 'Configurações',
 };
 
-// FIX: Moved `generatePrintableHtml` to module scope to prevent potential variable shadowing issues within the component.
 const generatePrintableHtml = (title: string, content: string): string => {
   return `
       <html><head><title>${title}</title><style>
         body { 
           font-family: 'Courier New', Courier, monospace;
           width: 72mm;
-          font-size: 16pt; /* User Request */
-          font-weight: 700; /* User Request: bold */
+          font-size: 16pt;
+          font-weight: 700;
           color: #000;
           margin: 0 auto;
           padding: 3mm;
@@ -91,11 +82,11 @@ const generatePrintableHtml = (title: string, content: string): string => {
         .header { text-align: center; margin-bottom: 15px; }
         .header h3, .font-black { 
           margin: 0; 
-          font-size: 20pt; /* User Request */
+          font-size: 20pt;
           font-weight: 900; 
         }
         .font-bold { font-weight: 900; }
-        .text-lg { font-size: 20pt; } /* Header size */
+        .text-lg { font-size: 20pt; }
         .text-xl { font-size: 22pt; }
         .flex { display: flex; }
         .justify-between { justify-content: space-between; }
@@ -107,14 +98,12 @@ const generatePrintableHtml = (title: string, content: string): string => {
         .border-t { border-top: 2px dashed #000; }
         .border-b { border-bottom: 2px dashed #000; }
         .border-dashed { border-style: dashed; } .border-black { border-color: #000; }
-        /* Scaled font sizes */
-        .text-base { font-size: 18pt; line-height: 1.5rem; } /* Total size */
-        .text-sm { font-size: 16pt; line-height: 1.25rem; } /* Body size */
-        .text-xs { font-size: 12pt; line-height: 1rem; } /* Footer size */
+        .text-base { font-size: 18pt; line-height: 1.5rem; }
+        .text-sm { font-size: 16pt; line-height: 1.25rem; }
+        .text-xs { font-size: 12pt; line-height: 1rem; }
         .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem; }
         img { display: block; margin: 8px auto; border: 4px solid black; }
 
-        /* Styles for dotted filler rows */
         .receipt-row {
           display: grid;
           grid-template-columns: auto 1fr auto;
@@ -124,7 +113,7 @@ const generatePrintableHtml = (title: string, content: string): string => {
         .receipt-row .filler {
           border-bottom: 2px dotted #000;
           position: relative;
-          bottom: 0.2em; /* Align dots with middle of text */
+          bottom: 0.2em;
         }
         .receipt-row .value {
           white-space: nowrap;
@@ -168,7 +157,6 @@ const App: React.FC = () => {
     
     const [currentView, setCurrentView] = useState<View>(() => (localStorage.getItem('lastActiveView') as View) || 'DASHBOARD');
     
-    const [notification, setNotification] = useState<NotificationState>(null);
     const [isSharing, setIsSharing] = useState(false);
     const [lastBackupTimestamp, setLastBackupTimestamp] = useState<string | null>(localStorage.getItem('lastBackupTimestamp'));
     const [actionFeedbackState, setActionFeedbackState] = useState<{ isOpen: boolean; variant: 'success' | 'edit' | 'delete' | 'pending'; message: string; onEnd?: () => void }>({ isOpen: false, variant: 'success', message: '' });
@@ -227,7 +215,6 @@ const App: React.FC = () => {
     useEffect(() => {
         const unlock = () => {
             unlockAudio();
-            // Remove the event listeners after the first interaction
             window.removeEventListener('mousedown', unlock);
             window.removeEventListener('touchstart', unlock);
         };
@@ -245,10 +232,8 @@ const App: React.FC = () => {
     useEffect(() => {
         const requestFullScreen = () => {
             const element = document.documentElement;
-            // Check if fullscreen is supported and not already active
             if (element.requestFullscreen && !document.fullscreenElement) {
                 element.requestFullscreen().catch(err => {
-                    // This can fail if not triggered by a user gesture, so we'll just log it.
                     console.warn(`Could not enter full-screen mode automatically: ${err.message}`);
                 });
             }
@@ -256,68 +241,49 @@ const App: React.FC = () => {
     
         const handleFirstInteraction = () => {
             requestFullScreen();
-            // Clean up the listeners after they've done their job
             window.removeEventListener('click', handleFirstInteraction);
             window.removeEventListener('touchstart', handleFirstInteraction);
         };
     
-        // Add listeners for the first interaction
         window.addEventListener('click', handleFirstInteraction);
         window.addEventListener('touchstart', handleFirstInteraction);
     
-        // Cleanup function to remove listeners when the component unmounts
         return () => {
             window.removeEventListener('click', handleFirstInteraction);
             window.removeEventListener('touchstart', handleFirstInteraction);
         };
-    }, []); // Empty dependency array ensures this runs only once on mount
-
-    // --- Service Worker Registration ---
-    useEffect(() => {
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                const swUrl = new URL('sw.js', window.location.origin);
-                navigator.serviceWorker.register(swUrl)
-                    .then(registration => {
-                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                    })
-                    .catch(error => {
-                        console.error('ServiceWorker registration failed: ', error);
-                    });
-            });
-        }
     }, []);
 
     // --- Handlers ---
     const showNotification = useCallback((message: string, type: 'success' | 'error' = 'success') => {
-        setNotification({ message, type });
+        if (type === 'error') {
+            alert(`ERRO: ${message}`);
+            console.error(`Notification: ${message}`);
+        } else {
+            console.log(`Notification: ${message}`);
+        }
     }, []);
     
     // --- Back button exit confirmation ---
     useEffect(() => {
       const handleBackButton = (event: PopStateEvent) => {
-        // Only trigger on the main dashboard view
         if (currentView !== 'DASHBOARD') {
           return;
         }
 
         if (backButtonPressedOnce.current) {
-          // Second press, allow exit
           return;
         }
 
-        // First press
-        event.preventDefault(); // Prevent default back action
+        event.preventDefault();
         backButtonPressedOnce.current = true;
         showNotification("Pressione 'voltar' novamente para sair.", 'success');
 
-        // Prevent the actual back navigation by pushing the current state back onto the history
         history.pushState(null, '', location.href);
 
-        // Reset the flag after a timeout
         setTimeout(() => {
           backButtonPressedOnce.current = false;
-        }, 2000); // 2-second window for the second press
+        }, 2000);
       };
 
       window.addEventListener('popstate', handleBackButton);
@@ -458,7 +424,6 @@ const App: React.FC = () => {
         const userIndex = users.findIndex(u => u.email === email);
 
         if (rememberMe && password) {
-            // Remember me: save email and encoded password
             const newUser: SavedUser = { email, pass: btoa(password) };
             if (userIndex > -1) {
                 users[userIndex] = newUser;
@@ -466,7 +431,6 @@ const App: React.FC = () => {
                 users.push(newUser);
             }
         } else {
-             // Not remembering: save email only, removing any existing password
              const newUser: SavedUser = { email };
              if (userIndex > -1) {
                  users[userIndex] = newUser;
@@ -515,7 +479,7 @@ const App: React.FC = () => {
     }, []);
     
     useEffect(() => {
-        if (user && !userProfile) { // Fetch profile only if user exists and profile isn't loaded
+        if (user && !userProfile) { 
             const fetchProfile = async () => {
                 try {
                     const profileDoc = await getDoc(doc(db, "users", user.uid));
@@ -572,7 +536,6 @@ const App: React.FC = () => {
     // Fetch data from Firestore
     useEffect(() => {
         if (!user) {
-            // Clear local data on logout
             setCustomers([]);
             setBillings([]);
             setExpenses([]);
@@ -1616,7 +1579,6 @@ const App: React.FC = () => {
             </div>
             
             <BottomNavBar currentView={currentView} setView={setView} />
-            <Notification notification={notification} onClose={() => setNotification(null)} />
             {isInstallBannerVisible && deferredPrompt && <InstallPwaBanner onInstall={handleInstallPrompt} onDismiss={() => setIsInstallBannerVisible(false)} />}
             
             {/* All Modals */}
@@ -1624,7 +1586,7 @@ const App: React.FC = () => {
             {editCustomerModalState.isOpen && editCustomerModalState.customer && <EditCustomerModal isOpen={editCustomerModalState.isOpen} onClose={() => setEditCustomerModalState({ isOpen: false, customer: null })} onConfirm={handleUpdateCustomer} customer={editCustomerModalState.customer} customers={customers} isSaving={isSaving} showNotification={showNotification} areValuesHidden={areValuesHidden} />}
             {debtPaymentModalState.isOpen && debtPaymentModalState.customer && <DebtPaymentModal isOpen={debtPaymentModalState.isOpen} onClose={() => setDebtPaymentModalState({ isOpen: false, customer: null })} onConfirm={(details) => handleAddDebtPayment(debtPaymentModalState.customer!.id, details)} onForgiveDebt={(customer) => setForgiveDebtModalState({ isOpen: true, customer })} customer={debtPaymentModalState.customer} />}
             {historyModalState.isOpen && historyModalState.customer && <HistoryModal isOpen={historyModalState.isOpen} onClose={() => setHistoryModalState({ isOpen: false, customer: null })} customer={historyModalState.customer} billings={billings} debtPayments={debtPayments} areValuesHidden={areValuesHidden} />}
-            {deleteModalState.isOpen && deleteModalState.customer && <ActionModal isOpen={deleteModalState.isOpen} onClose={() => setDeleteModalState({ isOpen: false, customer: null })} onConfirm={() => handleDeleteCustomer(deleteModalState.customer!)} title="Excluir Cliente" confirmText="Sim, Excluir"><p>Tem certeza? Todos os dados, incluindo histórico de cobranças, serão perdidos.</p></ActionModal>}
+            {deleteModalState.isOpen && deleteModalState.customer && <ActionModal isOpen={deleteModalState.isOpen} onClose={() => setDeleteModalState({ isOpen: false, customer: null })} onConfirm={() => handleDeleteCustomer(deleteModalState.customer!)} title="Excluir Cliente"><p>Tem certeza? Todos os dados, incluindo histórico de cobranças, serão perdidos.</p></ActionModal>}
             {equipmentSelectionModalState.isOpen && equipmentSelectionModalState.customer && <EquipmentSelectionModal isOpen={equipmentSelectionModalState.isOpen} onClose={() => setEquipmentSelectionModalState({ isOpen: false, customer: null })} customer={equipmentSelectionModalState.customer} onSelect={handleSelectEquipmentForBilling} />}
             {receiptActionsModalState.isOpen && receiptActionsModalState.billing && <ReceiptActionsModal isOpen={receiptActionsModalState.isOpen} onClose={() => setReceiptActionsModalState({ isOpen: false, billing: null, isProvisional: false })} billing={receiptActionsModalState.billing} isProvisional={receiptActionsModalState.isProvisional} isSharing={isSharing} onShare={() => handleShareReceipt(receiptActionsModalState.billing!)} onPrint={() => handlePrintPdfReceipt(receiptActionsModalState.billing!)} onPrintSunmi={() => handlePrintThermalReceipt(receiptActionsModalState.billing!)} showNotification={showNotification} />}
             {debtReceiptActionsModalState.isOpen && debtReceiptActionsModalState.debtPayment && <DebtReceiptActionsModal isOpen={debtReceiptActionsModalState.isOpen} onClose={() => setDebtReceiptActionsModalState({ isOpen: false, debtPayment: null, customer: null })} debtPayment={debtReceiptActionsModalState.debtPayment} isSharing={isSharing} onShare={() => handleShareReceipt(debtReceiptActionsModalState.debtPayment!)} onPrint={() => handlePrintPdfReceipt(debtReceiptActionsModalState.debtPayment!)} onPrintSunmi={() => handlePrintThermalReceipt(debtReceiptActionsModalState.debtPayment!)} showNotification={showNotification} />}
