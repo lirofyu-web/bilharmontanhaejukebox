@@ -2,16 +2,13 @@
 import React from 'react';
 import { ShareIcon } from './icons/ShareIcon';
 import { Billing } from '../types';
-import { PrinterIcon } from './icons/PrinterIcon';
-import { sunmiPrinterService } from '../utils/sunmiPrinter';
-import { SunmiIcon } from './icons/SunmiIcon';
+import { SaveIcon } from './icons/SaveIcon'; // Ícone de Salvar
 
 interface ReceiptActionsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onShare: () => Promise<void>;
   onPrint: () => void;
-  onPrintSunmi: () => Promise<void>;
   billing: Billing;
   isProvisional: boolean;
   isSharing: boolean;
@@ -23,12 +20,9 @@ const ReceiptActionsModal: React.FC<ReceiptActionsModalProps> = ({
   onClose,
   onShare,
   onPrint,
-  onPrintSunmi,
   isSharing,
 }) => {
   if (!isOpen) return null;
-
-  const isSunmiAvailable = sunmiPrinterService.isPrinterAvailable();
 
   return (
     <div 
@@ -43,23 +37,12 @@ const ReceiptActionsModal: React.FC<ReceiptActionsModalProps> = ({
           <p className="text-slate-400 mt-4">O que você deseja fazer?</p>
         </div>
         <div className="p-6 bg-slate-800/50 rounded-b-lg flex flex-col gap-3">
-          {isSunmiAvailable && (
-            <button
-              onClick={onPrintSunmi}
-              disabled={isSharing}
-              className="w-full inline-flex items-center justify-center gap-2 bg-orange-600 text-white font-bold py-3 px-6 rounded-md hover:bg-orange-500 transition-colors disabled:bg-slate-500"
-              title="Imprimir na impressora interna Sunmi"
-            >
-              <SunmiIcon className="w-5 h-5" />
-              <span>{isSharing ? 'Imprimindo...' : 'Imprimir (Sunmi)'}</span>
-            </button>
-          )}
           <button
             onClick={onPrint}
             disabled={isSharing}
             className="w-full inline-flex items-center justify-center gap-2 bg-cyan-600 text-white font-bold py-3 px-6 rounded-md hover:bg-cyan-500 transition-colors disabled:bg-slate-500"
           >
-            <PrinterIcon className="w-5 h-5" />
+            <SaveIcon className="w-5 h-5" />
             <span>Salvar / Imprimir (PDF)</span>
           </button>
           <button

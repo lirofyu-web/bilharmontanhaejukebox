@@ -28,6 +28,7 @@ interface ClientesViewProps {
   isSaving: boolean;
   showNotification: (message: string, type?: 'success' | 'error') => void;
   onFocusCustomer: (customer: Customer) => void;
+  onFichaActions: (customer: Customer) => void;
   onBillCustomer: (customer: Customer) => void;
   onEditCustomer: (customer: Customer) => void;
   onDeleteCustomer: (customer: Customer) => void;
@@ -80,6 +81,7 @@ const ClientesView: React.FC<ClientesViewProps> = ({
     isSaving,
     showNotification,
     onFocusCustomer,
+    onFichaActions,
     onBillCustomer,
     onEditCustomer,
     onDeleteCustomer,
@@ -217,7 +219,7 @@ const ClientesView: React.FC<ClientesViewProps> = ({
             return (
                 <section key={city} className={`${cardBgColor} ${cardBorderColor} p-4 rounded-lg shadow-lg border`}>
                     <div className="flex flex-wrap justify-between items-center gap-x-4 gap-y-2 mb-4"><h2 className="text-2xl font-bold text-red-600 dark:text-red-500 flex items-center gap-2"><LocationMarkerIcon className="w-6 h-6 text-slate-400" />{city} ({cityCustomers.length})</h2><div className="flex items-center gap-4"><div className="flex items-center gap-1.5 text-green-500" title="Clientes visitados nos últimos 25 dias"><GreenBilliardBallIcon className="w-4 h-4" /><span className="font-bold">{stats.visited}</span></div><div className="flex items-center gap-1.5 text-red-500" title="Clientes com visita pendente"><RedBilliardBallIcon className="w-4 h-4" /><span className="font-bold">{stats.notVisited}</span></div><button onClick={() => handleCityCardClick(city)} className="text-sm font-semibold text-lime-600 dark:text-lime-400 hover:underline">Ver Todos &rarr;</button></div></div>
-                    <div className="flex flex-wrap justify-center -m-3">{cityCustomers.slice(0, 4).map(customer => (<div key={customer.id} className="w-full md:w-1/2 lg:w-1/3 xl:w-1/4 p-3"><CustomerCard customer={customer} billings={billings} hasActiveWarning={warnings.some(w => w.customerId === customer.id && !w.isResolved)} onBill={onBillCustomer} onEdit={onEditCustomer} onDelete={onDeleteCustomer} onPayDebt={onPayDebtCustomer} onHistory={onHistoryCustomer} showNotification={showNotification} onFocusCustomer={onFocusCustomer} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden} onUpdateCustomer={onUpdateCustomer} /></div>))}</div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">{cityCustomers.slice(0, 8).map(customer => (<CustomerCard key={customer.id} customer={customer} billings={billings} hasActiveWarning={warnings.some(w => w.customerId === customer.id && !w.isResolved)} onBill={onBillCustomer} onEdit={onEditCustomer} onDelete={onDeleteCustomer} onPayDebt={onPayDebtCustomer} onHistory={onHistoryCustomer} showNotification={showNotification} onFocusCustomer={onFocusCustomer} onFichaActions={onFichaActions} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden} onUpdateCustomer={onUpdateCustomer} />))}</div>
                 </section>
             );
             })}
@@ -230,7 +232,7 @@ const ClientesView: React.FC<ClientesViewProps> = ({
                 return(
                     <section key={route.id} className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700">
                         <div className="flex justify-between items-center mb-4"><h2 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2"><MapIcon className="w-6 h-6 text-slate-400" />{route.name} ({route.customerIds.length})</h2><button onClick={() => onDeleteRoute(route.id)} className="text-red-500 hover:text-red-400 p-2 rounded-full hover:bg-red-500/10" title="Excluir Rota"><TrashIcon className="w-5 h-5"/></button></div>
-                        <div className="flex flex-col gap-4">{routeCustomers.map((customer, idx) => (<div key={customer.id} className="flex items-center gap-4"><span className="font-bold text-xl text-lime-500 w-8 text-center">{idx + 1}.</span><div className="flex-grow"><CustomerCard customer={customer} billings={billings} hasActiveWarning={warnings.some(w => w.customerId === customer.id && !w.isResolved)} onBill={onBillCustomer} onEdit={onEditCustomer} onDelete={onDeleteCustomer} onPayDebt={onPayDebtCustomer} onHistory={onHistoryCustomer} showNotification={showNotification} onFocusCustomer={onFocusCustomer} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden} onUpdateCustomer={onUpdateCustomer} /></div></div>))}</div>
+                        <div className="flex flex-col gap-4">{routeCustomers.map((customer, idx) => (<div key={customer.id} className="flex items-center gap-4"><span className="font-bold text-xl text-lime-500 w-8 text-center">{idx + 1}.</span><div className="flex-grow"><CustomerCard customer={customer} billings={billings} hasActiveWarning={warnings.some(w => w.customerId === customer.id && !w.isResolved)} onBill={onBillCustomer} onEdit={onEditCustomer} onDelete={onDeleteCustomer} onPayDebt={onPayDebtCustomer} onHistory={onHistoryCustomer} showNotification={showNotification} onFocusCustomer={onFocusCustomer} onFichaActions={onFichaActions} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden} onUpdateCustomer={onUpdateCustomer} /></div></div>))}</div>
                     </section>
                 )
             })}
@@ -238,7 +240,7 @@ const ClientesView: React.FC<ClientesViewProps> = ({
         </div>
       )}
 
-      {viewingCity && (<CityCustomersModal city={viewingCity} customers={customersByCity[viewingCity] || []} warnings={warnings} billings={billings} onClose={() => setViewingCity(null)} onBillCustomer={onBillCustomer} onEditCustomer={onEditCustomer} onDeleteCustomer={onDeleteCustomer} onPayDebtCustomer={onPayDebtCustomer} onHistoryCustomer={onHistoryCustomer} showNotification={showNotification} onFocusCustomer={onFocusCustomer} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden} onUpdateCustomer={onUpdateCustomer} />)}
+      {viewingCity && (<CityCustomersModal city={viewingCity} customers={customersByCity[viewingCity] || []} warnings={warnings} billings={billings} onClose={() => setViewingCity(null)} onBillCustomer={onBillCustomer} onEditCustomer={onEditCustomer} onDeleteCustomer={onDeleteCustomer} onPayDebtCustomer={onPayDebtCustomer} onHistoryCustomer={onHistoryCustomer} showNotification={showNotification} onFocusCustomer={onFocusCustomer} onFichaActions={onFichaActions} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden} onUpdateCustomer={onUpdateCustomer} />)}
     </>
   );
 };

@@ -2,7 +2,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Billing, Customer, DebtPayment, Expense, Equipment } from '../types';
 import PageHeader from '../components/PageHeader';
-import { PrinterIcon } from '../components/icons/PrinterIcon';
 import CraneReportModal from '../components/CraneReportModal';
 import { BilliardIcon } from '../components/icons/BilliardIcon';
 import { JukeboxIcon } from '../components/icons/JukeboxIcon';
@@ -20,7 +19,6 @@ interface RelatoriosViewProps {
   billings: Billing[];
   expenses: Expense[];
   debtPayments: DebtPayment[];
-  onThermalPrint: (title: string, content: string) => void;
   areValuesHidden: boolean;
   showNotification: (message: string, type?: 'success' | 'error') => void;
 }
@@ -53,7 +51,7 @@ const JukeboxReportModal: React.FC<{
       <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md border border-slate-700 animate-fade-in-up">
         <div className="p-6 border-b border-slate-700">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <PrinterIcon className="w-6 h-6 text-fuchsia-400" />
+            <DocumentDuplicateIcon className="w-6 h-6 text-fuchsia-400" />
             Configurar Relatório de Jukebox
           </h2>
         </div>
@@ -84,7 +82,7 @@ const JukeboxReportModal: React.FC<{
               type="submit"
               className="bg-fuchsia-600 text-white font-bold py-2 px-4 rounded-md hover:bg-fuchsia-500 flex items-center gap-2"
             >
-              <PrinterIcon className="w-5 h-5" />
+              <DocumentDuplicateIcon className="w-5 h-5" />
               Gerar Relatório
             </button>
           </div>
@@ -124,7 +122,7 @@ const MesaReportModal: React.FC<{
       <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md border border-slate-700 animate-fade-in-up">
         <div className="p-6 border-b border-slate-700">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <PrinterIcon className="w-6 h-6 text-cyan-400" />
+            <DocumentDuplicateIcon className="w-6 h-6 text-cyan-400" />
             Configurar Relatório de Mesas
           </h2>
         </div>
@@ -155,7 +153,7 @@ const MesaReportModal: React.FC<{
               type="submit"
               className="bg-cyan-600 text-white font-bold py-2 px-4 rounded-md hover:bg-cyan-500 flex items-center gap-2"
             >
-              <PrinterIcon className="w-5 h-5" />
+              <DocumentDuplicateIcon className="w-5 h-5" />
               Gerar Relatório
             </button>
           </div>
@@ -200,7 +198,7 @@ const InfoRow: React.FC<InfoRowProps> = React.memo(({ label, value, valueColor =
 
 // --- Main View Component ---
 
-const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, expenses, debtPayments, onThermalPrint, areValuesHidden, showNotification }) => {
+const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, expenses, debtPayments, areValuesHidden, showNotification }) => {
   const getInitialDateRange = () => {
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -792,7 +790,7 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
               <InfoRow label="(-) Despesas (Mesas)" value={areValuesHidden ? 'R$ •••,••' : `- R$ ${stats.periodExpensesMesa.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-600 dark:text-red-400" />
               <InfoRow label="(=) Lucro Líquido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${(stats.revenueMesaDinheiro + stats.revenueMesaPix - stats.periodExpensesMesa).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-green-500 dark:text-green-300 font-bold text-lg" />
             </dl>
-           <button onClick={() => setIsMesaReportModalOpen(true)} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Mesas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-cyan-600 text-white font-bold py-2 px-4 rounded-md hover:bg-cyan-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><PrinterIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
+           <button onClick={() => setIsMesaReportModalOpen(true)} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Mesas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-cyan-600 text-white font-bold py-2 px-4 rounded-md hover:bg-cyan-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><DocumentDuplicateIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
         </InfoCard>
         
         <InfoCard title="Resumo: Jukebox" icon={<JukeboxIcon className="w-6 h-6 text-fuchsia-500" />}>
@@ -802,7 +800,7 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
               <InfoRow label="(-) Despesas (Jukebox)" value={areValuesHidden ? 'R$ •••,••' : `- R$ ${stats.periodExpensesJukebox.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-600 dark:text-red-400" />
               <InfoRow label="(=) Lucro Líquido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${(stats.revenueJukeboxDinheiro + stats.revenueJukeboxPix - stats.periodExpensesJukebox).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-green-500 dark:text-green-300 font-bold text-lg" />
             </dl>
-           <button onClick={() => setIsJukeboxReportModalOpen(true)} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Jukebox"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-fuchsia-600 text-white font-bold py-2 px-4 rounded-md hover:bg-fuchsia-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><PrinterIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
+           <button onClick={() => setIsJukeboxReportModalOpen(true)} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Jukebox"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-fuchsia-600 text-white font-bold py-2 px-4 rounded-md hover:bg-fuchsia-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><DocumentDuplicateIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
         </InfoCard>
 
         <InfoCard title="Resumo: Gruas de Pelúcia" icon={<CraneIcon className="w-6 h-6 text-orange-500" />}>
@@ -813,7 +811,7 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
               <InfoRow label="(-) Despesas (Gruas)" value={areValuesHidden ? 'R$ •••,••' : `- R$ ${stats.periodExpensesGrua.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-600 dark:text-red-400" />
               <InfoRow label="(=) Lucro Líquido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${(stats.revenueGruaFirma - stats.periodExpensesGrua).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-green-500 dark:text-green-300 font-bold text-lg" />
             </dl>
-          <button onClick={() => setIsCraneReportModalOpen(true)} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Gruas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-orange-600 text-white font-bold py-2 px-4 rounded-md hover:bg-orange-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><PrinterIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
+          <button onClick={() => setIsCraneReportModalOpen(true)} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Gruas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-orange-600 text-white font-bold py-2 px-4 rounded-md hover:bg-orange-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><DocumentDuplicateIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
         </InfoCard>
         
         <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -823,7 +821,7 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
                     <InfoRow label="Recebido (PIX)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.debtReceivedPix.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-lime-600 dark:text-lime-400" />
                     <InfoRow label="(=) Total Recebido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.totalDebtReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-emerald-500 dark:text-emerald-300 font-bold text-lg" />
                 </dl>
-                <button onClick={handlePrintDebtPaymentsReport} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Dívidas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold py-2 px-4 rounded-md hover:bg-emerald-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><PrinterIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
+                <button onClick={handlePrintDebtPaymentsReport} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Dívidas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold py-2 px-4 rounded-md hover:bg-emerald-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><DocumentDuplicateIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
             </InfoCard>
 
             <InfoCard title="Resumo Geral de Despesas" icon={<CalculatorIcon className="w-6 h-6 text-red-500" />}>
@@ -846,7 +844,7 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
                     <dl>
                         <InfoRow label="Total de Despesas" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.totalFilteredExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-500 dark:text-red-300 font-bold text-lg" />
                     </dl>
-                    <button onClick={handlePrintExpenseReport} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Despesas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><PrinterIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
+                    <button onClick={handlePrintExpenseReport} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Despesas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><DocumentDuplicateIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
                 </div>
             </InfoCard>
 
@@ -872,7 +870,7 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
       {isCraneReportModalOpen && <CraneReportModal isOpen={isCraneReportModalOpen} onClose={() => setIsCraneReportModalOpen(false)} onConfirm={handleGenerateCraneReport} />}
       {isMesaReportModalOpen && <MesaReportModal isOpen={isMesaReportModalOpen} onClose={() => setIsMesaReportModalOpen(false)} onConfirm={handlePrintMesaReport} />}
       {isJukeboxReportModalOpen && <JukeboxReportModal isOpen={isJukeboxReportModalOpen} onClose={() => setIsJukeboxReportModalOpen(false)} onConfirm={handlePrintJukeboxReport} />}
-      {isCustomerSelectionOpen && <CustomerSelectionForSlipsModal isOpen={isCustomerSelectionOpen} onClose={() => setIsCustomerSelectionOpen(false)} customers={customers} onConfirm={handleGenerateSlips} />}
+      {isCustomerSelectionOpen && <CustomerSelectionForSlipsModal isOpen={isCustomerSelectionOpen} onClose={() => setIsCustomerSelectionOpen(e => !e)} customers={customers} onConfirm={handleGenerateSlips} />}
       {slipsToPrint && <PrintableSlipsModal slips={slipsToPrint} onClose={() => setSlipsToPrint(null)} />}
     </>
   );

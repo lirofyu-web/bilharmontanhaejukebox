@@ -4,7 +4,7 @@ import { Customer } from '../types';
 import { generateCustomerSheetHtml } from '../utils/staticSheetGenerator';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { XIcon } from './icons/XIcon';
-import { PrinterIcon } from './icons/PrinterIcon';
+import { DocumentDuplicateIcon } from './icons/DocumentDuplicateIcon';
 import { exportElementAsPDF } from '../utils/pdfGenerator';
 
 interface PrintableCustomerSheetViewProps {
@@ -91,7 +91,7 @@ const PrintableCustomerSheetView: React.FC<PrintableCustomerSheetViewProps> = ({
         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 ml-3">Visualizar Ficha</h3>
         <div className="flex items-center gap-2">
           <button onClick={handlePrint} className="bg-sky-600 text-white font-bold py-2 px-4 rounded-md hover:bg-sky-500 flex items-center gap-2 transition-colors">
-            <PrinterIcon className="w-5 h-5" />
+            <DocumentDuplicateIcon className="w-5 h-5" />
             Imprimir
           </button>
           <button onClick={handleOpenPdf} disabled={isGenerating} className="bg-primary text-primary-text font-bold py-2 px-4 rounded-md hover:bg-primary-hover flex items-center gap-2 disabled:opacity-50 transition-colors">

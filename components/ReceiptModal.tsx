@@ -2,7 +2,7 @@
 import React from 'react';
 import { Billing } from '../types';
 import { generateReceiptText } from '../utils/receiptGenerator';
-import { PrinterIcon } from './icons/PrinterIcon';
+import { SaveIcon } from './icons/SaveIcon';
 
 interface ReceiptModalProps {
   isOpen: boolean;
@@ -70,8 +70,8 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, billing })
             onClick={handlePrint}
             className="flex-1 inline-flex items-center justify-center gap-2 bg-sky-600 text-white font-bold py-3 px-6 rounded-md hover:bg-sky-500"
           >
-            <PrinterIcon className="w-5 h-5" />
-            <span>Imprimir</span>
+            <SaveIcon className="w-5 h-5" />
+            <span>Salvar / Imprimir</span>
           </button>
         </div>
         <div className="p-4 text-center">

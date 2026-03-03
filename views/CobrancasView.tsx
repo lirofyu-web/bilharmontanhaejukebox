@@ -6,7 +6,7 @@ import { SearchIcon } from '../components/icons/SearchIcon';
 import { BilliardIcon } from '../components/icons/BilliardIcon';
 import { JukeboxIcon } from '../components/icons/JukeboxIcon';
 import { CraneIcon } from '../components/icons/CraneIcon';
-import { PrinterIcon } from '../components/icons/PrinterIcon';
+import { DocumentDuplicateIcon } from '../components/icons/DocumentDuplicateIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
 import { PencilIcon } from '../components/icons/PencilIcon';
 import ActionModal from '../components/ActionModal';
@@ -208,7 +208,7 @@ const DebtorsList: React.FC<DebtorsListProps> = ({ debtorCustomers, totalDebt, o
         <div className="flex justify-between items-center p-4 bg-slate-100 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Clientes Devedores ({debtorCustomers.length})</h3>
             <button onClick={onPrint} className="inline-flex items-center gap-2 bg-sky-600 text-white font-bold py-2 px-4 rounded-md hover:bg-sky-500">
-                <PrinterIcon className="w-5 h-5" />
+                <DocumentDuplicateIcon className="w-5 h-5" />
                 <span className="hidden sm:inline">Imprimir Lista</span>
             </button>
         </div>
@@ -239,7 +239,7 @@ const DebtorsList: React.FC<DebtorsListProps> = ({ debtorCustomers, totalDebt, o
                                 onClick={() => onPrintDebtStatement(customer)}
                                 className="flex-1 bg-slate-600 text-white font-bold py-2 px-3 rounded-md hover:bg-slate-500 text-sm flex items-center justify-center gap-2"
                             >
-                               <PrinterIcon className="w-5 h-5" /> Demonstrativo
+                               <DocumentDuplicateIcon className="w-5 h-5" /> Demonstrativo
                             </button>
                         </div>
                     </li>

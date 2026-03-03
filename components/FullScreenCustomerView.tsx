@@ -1,67 +1,6 @@
 import React, { useRef } from 'react';
-import ReactDOMServer from 'react-dom/server';
 import { Customer, Equipment } from '../types';
 import { formatDate } from '../utils/formatDate';
-
-// --- Componente para o Recibo Térmico ---
-const ThermalReceipt = ({ customer }: { customer: Customer }) => (
-  <div style={{ fontFamily: 'monospace', fontSize: '12px', color: '#000', width: '300px', padding: '10px' }}>
-    <h2 style={{ textAlign: 'center', margin: '0 0 10px 0', fontSize: '16px' }}>MONTANHA BILHAR</h2>
-    <p style={{ textAlign: 'center', margin: '0' }}>CNPJ: 76.089.440/0001-29</p>
-    <p style={{ textAlign: 'center', margin: '0 0 15px 0' }}>Tel: (43) 99958-1993</p>
-    
-    <p><strong>CLIENTE:</strong> {customer.name}</p>
-    <p><strong>CIDADE:</strong> {customer.cidade}</p>
-    <p><strong>ENDEREÇO:</strong> {customer.endereco}</p>
-    <p><strong>DATA:</strong> {formatDate(new Date())}</p>
-    
-    <hr style={{ border: 'none', borderTop: '1px dashed #000', margin: '15px 0' }} />
-
-    {customer.equipment?.map(equip => (
-      <div key={equip.id} style={{ marginBottom: '15px' }}>
-        <p style={{ textTransform: 'uppercase', fontWeight: 'bold' }}>{equip.type} Nº {equip.numero}</p>
-        <p>Nº Relógio: {equip.relogioNumero || '-'}</p>
-        <p>Leitura Ant.: {equip.relogioAnterior || '-'}</p>
-        {equip.type === 'mesa' && (
-          equip.billingType === 'monthly' ? (
-            <p>Mensal: R$ {equip.monthlyFeeValue?.toFixed(2)}</p>
-          ) : (
-            <>
-              <p>Vlr. Ficha: R$ {equip.valorFicha?.toFixed(2)}</p>
-              <p>% Firma: {equip.parteFirma}%</p>
-              <p>% Cliente: {100 - (equip.parteFirma || 0)}%</p>
-            </>
-          )
-        )}
-        {equip.type === 'jukebox' && (
-           <>
-            <p>% Firma: {equip.porcentagemJukeboxFirma}%</p>
-            <p>% Cliente: {100 - (equip.porcentagemJukeboxFirma || 0)}%</p>
-          </>
-        )}
-         {equip.type === 'grua' && (
-          <>
-            {equip.aluguelValor && <p>Aluguel: R$ {equip.aluguelValor.toFixed(2)}</p>}
-            {equip.aluguelPercentual && <p>Aluguel: {equip.aluguelPercentual}%</p>}
-            <p>Capacidade: {equip.quantidadePelucia} unid.</p>
-          </>
-        )}
-      </div>
-    ))}
-
-    <hr style={{ border: 'none', borderTop: '1px dashed #000', margin: '15px 0' }} />
-    <p style={{ textAlign: 'justify', fontSize: '10px' }}>O(A) locatário(a) declara receber o(s) equipamento(s) em perfeito estado. Danos por mau uso serão de sua responsabilidade.</p>
-    <div style={{ marginTop: '30px', textAlign: 'center' }}>
-        <p>_________________________</p>
-        <p>{customer.name.toUpperCase()}</p>
-    </div>
-     <div style={{ marginTop: '30px', textAlign: 'center' }}>
-        <p>_________________________</p>
-        <p>MONTANHA BILHAR</p>
-    </div>
-  </div>
-);
-
 
 interface FullScreenCustomerViewProps {
   customer: Customer;
@@ -136,30 +75,6 @@ const FullScreenCustomerView: React.FC<FullScreenCustomerViewProps> = ({ custome
     openPrintPreview(html, `Ficha de Cliente - ${customer.name}`);
   };
 
-  const handleThermalPrint = () => {
-    const receiptHtml = ReactDOMServer.renderToStaticMarkup(<ThermalReceipt customer={customer} />);
-    const html = `
-      <html>
-        <head>
-          <title>Recibo - ${customer.name}</title>
-          <style>
-            @media print {
-              @page { margin: 0; }
-              body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-              .no-print { display: none !important; }
-            }
-             body { font-family: 'Inter', 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb; display: flex; justify-content: center;}
-            .no-print { position: fixed; top: 1rem; right: 1rem; background-color: #007bff; color: white; padding: 0.8rem 1.2rem; border-radius: 5px; cursor: pointer; font-weight: bold; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10000; }
-          </style>
-        </head>
-        <body>
-           <button class="no-print" onclick="window.print()">Imprimir</button>
-          ${receiptHtml}
-        </body>
-      </html>`;
-    openPrintPreview(html, `Recibo - ${customer.name}`);
-  };
-
   const renderEquipmentDetails = (equip: Equipment) => {
     let details: { [key: string]: string | number | null } = {};
     if (equip.type === 'mesa') {
@@ -196,7 +111,6 @@ const FullScreenCustomerView: React.FC<FullScreenCustomerViewProps> = ({ custome
           <h2 className="text-lg sm:text-xl font-bold text-gray-800">Ficha Profissional do Cliente</h2>
           <div className='flex items-center'>
             <button onClick={handleA4Print} className="bg-blue-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg hover:bg-blue-700 active:scale-95 transition-all text-xs sm:text-sm mr-2">Imprimir A4</button>
-            <button onClick={handleThermalPrint} className="bg-gray-700 text-white font-bold py-2 px-3 sm:px-4 rounded-lg hover:bg-gray-800 active:scale-95 transition-all text-xs sm:text-sm mr-2">Impressora Térmica</button>
             <button onClick={onClose} className="text-gray-500 hover:text-gray-900 font-bold py-2 px-3 sm:px-4 text-xl sm:text-2xl">&times;</button>
           </div>
         </header>

@@ -15,7 +15,7 @@ import { RedBilliardBallIcon } from './icons/RedBilliardBallIcon';
 import { GreenBilliardBallIcon } from './icons/GreenBilliardBallIcon';
 import { YellowBilliardBallIcon } from './icons/YellowBilliardBallIcon';
 import { PurpleBilliardBallIcon } from './icons/PurpleBilliardBallIcon';
-import { ImageIcon } from './icons/ImageIcon';
+import { DocumentTextIcon } from './icons/DocumentTextIcon';
 
 interface CustomerCardProps {
   customer: Customer;
@@ -27,6 +27,7 @@ interface CustomerCardProps {
   onHistory: (customer: Customer) => void;
   onLocationActions: (customer: Customer) => void;
   onWhatsAppActions: (customer: Customer) => void;
+  onFichaActions: (customer: Customer) => void;
   onFinalizePendingPayment: (billing: Billing) => void;
   onPendingPaymentAction: (customer: Customer, billing: Billing) => void;
   hasActiveWarning: boolean;
@@ -65,7 +66,7 @@ const EquipmentDetailRow: React.FC<{ label: string; value: string | number | und
 };
 
 
-const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill, onEdit, onDelete, onPayDebt, onHistory, onLocationActions, onWhatsAppActions, hasActiveWarning, showNotification, onFocusCustomer, onFinalizePendingPayment, onPendingPaymentAction, areValuesHidden, onUpdateCustomer }) => {
+const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill, onEdit, onDelete, onPayDebt, onHistory, onLocationActions, onWhatsAppActions, onFichaActions, hasActiveWarning, showNotification, onFocusCustomer, onFinalizePendingPayment, onPendingPaymentAction, areValuesHidden, onUpdateCustomer }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     const pendingBilling = useMemo(() => {
@@ -160,41 +161,44 @@ const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill,
                     </div>
                 </div>
                 
-                <div className="mt-4 grid grid-cols-4 gap-1.5">
-                    <ActionButton 
-                        onClick={handleBillingAction} 
-                        icon={<ReceiptIcon className="w-5 h-5" />} 
-                        label={pendingBilling ? (customer.equipment?.length > 1 ? "Opções" : "Finalizar") : "Faturar"}
-                        colorClass={pendingBilling ? "bg-amber-600" : ""}
-                        isPrimary={!pendingBilling}
-                        title={pendingBilling ? `Ações para pagamento pendente` : "Faturar novo equipamento"}
-                    />
-                    <ActionButton onClick={() => onEdit(customer)} icon={<PencilIcon className="w-5 h-5" />} label="Editar" colorClass="bg-sky-600" title='Editar Cliente' />
-                    <ActionButton 
-                        onClick={() => onPayDebt(customer)} 
-                        icon={<CurrencyDollarIcon className="w-5 h-5" />} 
-                        label={hasDebt ? "Pagar" : "Dívida"} 
-                        colorClass={hasDebt ? "bg-amber-600" : "bg-orange-500"}
-                        title={hasDebt ? "Registrar pagamento de dívida" : "Adicionar uma dívida avulsa"}
-                    />
-                     <ActionButton onClick={() => onHistory(customer)} icon={<HistoryIcon className="w-5 h-5" />} label="Histórico" colorClass="bg-indigo-600" />
-                    <ActionButton onClick={() => onFocusCustomer(customer)} icon={<ImageIcon className="w-5 h-5" />} label="Ficha" colorClass="bg-teal-600" title='Ver Ficha Completa do Cliente' />
-                    <ActionButton
-                        onClick={() => onWhatsAppActions(customer)}
-                        icon={<WhatsAppIcon className="w-5 h-5" />}
-                        label="WhatsApp"
-                        colorClass="bg-green-700"
-                        disabled={!customer.telefone}
-                        title={customer.telefone ? 'Enviar WhatsApp' : 'Cliente sem telefone'}
-                    />
-                    <ActionButton
-                        onClick={handleLocationClick}
-                        icon={<LocationArrowIcon className="w-5 h-5" />}
-                        label="Localização"
-                        colorClass={customer.latitude ? "bg-blue-700" : "bg-slate-600"}
-                        title={customer.latitude ? 'Ver localização' : 'Salvar localização atual'}
-                    />
-                    <ActionButton onClick={() => onDelete(customer)} icon={<TrashIcon className="w-5 h-5" />} label="Excluir" colorClass="bg-red-600" title='Excluir Cliente' />
+                <div className="mt-4 space-y-1.5">
+                    <div className="grid grid-cols-3 gap-1.5">
+                        <ActionButton 
+                            onClick={handleBillingAction} 
+                            icon={<ReceiptIcon className="w-5 h-5" />} 
+                            label={pendingBilling ? (customer.equipment?.length > 1 ? "Opções" : "Finalizar") : "Faturar"}
+                            colorClass={pendingBilling ? "bg-amber-600" : ""}
+                            isPrimary={!pendingBilling}
+                            title={pendingBilling ? `Ações para pagamento pendente` : "Faturar novo equipamento"}
+                        />
+                        <ActionButton onClick={() => onEdit(customer)} icon={<PencilIcon className="w-5 h-5" />} label="Editar" colorClass="bg-sky-600" title='Editar Cliente' />
+                        <ActionButton 
+                            onClick={() => onPayDebt(customer)} 
+                            icon={<CurrencyDollarIcon className="w-5 h-5" />} 
+                            label={hasDebt ? "Pagar" : "Dívida"} 
+                            colorClass={hasDebt ? "bg-amber-600" : "bg-orange-500"}
+                            title={hasDebt ? "Registrar pagamento de dívida" : "Adicionar uma dívida avulsa"}
+                        />
+                        <ActionButton onClick={() => onHistory(customer)} icon={<HistoryIcon className="w-5 h-5" />} label="Histórico" colorClass="bg-indigo-600" />
+                        <ActionButton onClick={() => onFichaActions(customer)} icon={<DocumentTextIcon className="w-5 h-5" />} label="Ficha" colorClass="bg-teal-600" title='Ver ou compartilhar ficha' />
+                        <ActionButton onClick={() => onDelete(customer)} icon={<TrashIcon className="w-5 h-5" />} label="Excluir" colorClass="bg-red-600" title='Excluir Cliente' />
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                        <ActionButton
+                            onClick={() => onWhatsAppActions(customer)}
+                            icon={<WhatsAppIcon className="w-5 h-5" />}
+                            label="WhatsApp"
+                            colorClass={customer.telefone ? 'bg-green-700' : 'bg-slate-600'}
+                            title={customer.telefone ? 'Opções do WhatsApp' : 'Adicionar WhatsApp'}
+                        />
+                        <ActionButton
+                            onClick={handleLocationClick}
+                            icon={<LocationArrowIcon className="w-5 h-5" />}
+                            label="Localização"
+                            colorClass={customer.latitude ? "bg-blue-700" : "bg-slate-600"}
+                            title={customer.latitude ? 'Ver localização' : 'Salvar localização atual'}
+                        />
+                    </div>
                 </div>
             </div>
 

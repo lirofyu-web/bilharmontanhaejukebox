@@ -1,7 +1,4 @@
-
-
 import React, { useState, useEffect } from 'react';
-import { PrinterIcon } from './icons/PrinterIcon';
 import { safeParseFloat } from '../utils';
 
 interface CraneReportModalProps {
@@ -40,7 +37,6 @@ const CraneReportModal: React.FC<CraneReportModalProps> = ({ isOpen, onClose, on
       <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md border border-slate-700 animate-fade-in-up">
         <div className="p-6 border-b border-slate-700">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <PrinterIcon className="w-6 h-6 text-cyan-400" />
             Configurar Relatório de Gruas
           </h2>
         </div>
@@ -94,7 +90,6 @@ const CraneReportModal: React.FC<CraneReportModalProps> = ({ isOpen, onClose, on
               type="submit"
               className="bg-cyan-600 text-white font-bold py-2 px-4 rounded-md hover:bg-cyan-500 flex items-center gap-2"
             >
-              <PrinterIcon className="w-5 h-5" />
               Gerar Relatório
             </button>
           </div>

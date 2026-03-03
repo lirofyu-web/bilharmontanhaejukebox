@@ -1,7 +1,7 @@
 // components/PrintableSlipsModal.tsx
 import React, { useRef } from 'react';
 import BillingSlipSheet from './BillingSlipSheet';
-import { PrinterIcon } from './icons/PrinterIcon';
+import { DocumentDuplicateIcon } from './icons/DocumentDuplicateIcon';
 import { Customer, Equipment } from '../types';
 
 interface PrintableSlipsModalProps {
@@ -88,7 +88,7 @@ const PrintableSlipsModal: React.FC<PrintableSlipsModalProps> = ({ slips, onClos
           <div className="flex gap-4">
             <button onClick={onClose} className="bg-slate-600 text-white font-bold py-2 px-6 rounded-md hover:bg-slate-500">Fechar</button>
             <button onClick={handlePrint} className="inline-flex items-center gap-2 bg-cyan-600 text-white font-bold py-2 px-6 rounded-md hover:bg-cyan-500">
-                <PrinterIcon className="w-5 h-5"/> <span>Imprimir {slipsPerPage} por Página</span>
+                <DocumentDuplicateIcon className="w-5 h-5"/> <span>Imprimir {slipsPerPage} por Página</span>
             </button>
           </div>
       </header>
