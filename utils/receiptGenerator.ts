@@ -183,8 +183,10 @@ export function generateCustomerShareText(customer: Customer): string {
   }
 
   text += `\n--------------------------------\n`;
-  text += `*TERMOS DE LOCAÇÃO:*\n`;
-  text += `O LOCATÁRIO RECEBE NESTA DATA O EQUIPAMENTO ACIMA IDENTIFICADO COM TODOS OS EQUIPAMENTOS INTERNOS E EXTERNOS EM PERFEITO ESTADO DE USO E CONSERVAÇÃO. O VALOR DA LOCAÇÃO SERÁ APURADO MEDIANTE O USO DO RESPECTIVO EQUIPAMENTO, SENDO QUE O PAGAMENTO OCORRERÁ NO PRAZO E NOS PERCENTUAIS ACIMA MENCIONADOS.`;
+  text += `*TERMOS DE LOCAÇÃO:*\n\n`;
+  text += `1. O equipamento é cedido em perfeito estado.\n`;
+  text += `2. O valor da locação é apurado com base no uso e pago conforme os percentuais e prazos definidos.\n`;
+  text += `3. Danos por mau uso são de responsabilidade do locatário.`;
 
   return text.trim();
 }

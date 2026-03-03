@@ -15,10 +15,8 @@ import { JukeboxIcon } from '../components/icons/JukeboxIcon';
 import { CraneIcon } from '../components/icons/CraneIcon';
 import { ListBulletIcon } from '../components/icons/ListBulletIcon';
 import { MapIcon } from '../components/icons/MapIcon';
-import { PlusIcon } from '../components/icons/PlusIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
 import { RulerIcon } from '../components/icons/RulerIcon';
-import ThermalPrintView from '../components/ThermalPrintView'; // Import the correct component
 
 interface ClientesViewProps {
   customers: Customer[];
@@ -26,23 +24,21 @@ interface ClientesViewProps {
   billings: Billing[];
   routes: Route[];
   onAddCustomer: (customerData: Omit<Customer, 'id' | 'createdAt' | 'debtAmount' | 'lastVisitedAt'>) => Promise<void>;
+  onUpdateCustomer: (updatedCustomer: Partial<Customer> & { id: string }) => void;
   isSaving: boolean;
   showNotification: (message: string, type?: 'success' | 'error') => void;
   onFocusCustomer: (customer: Customer) => void;
-  // Modal Trigger Callbacks
   onBillCustomer: (customer: Customer) => void;
   onEditCustomer: (customer: Customer) => void;
   onDeleteCustomer: (customer: Customer) => void;
   onPayDebtCustomer: (customer: Customer) => void;
   onHistoryCustomer: (customer: Customer) => void;
-  onShareCustomer: (customer: Customer) => void; // This will be repurposed
   onOpenFastBilling: () => void;
   onLocationActions: (customer: Customer) => void;
   onWhatsAppActions: (customer: Customer) => void;
   onFinalizePendingPayment: (billing: Billing) => void;
   onPendingPaymentAction: (customer: Customer, billing: Billing) => void;
   areValuesHidden: boolean;
-  // Route handlers
   onOpenRouteCreator: () => void;
   onSaveRoute: (name: string, customerIds: string[]) => Promise<void>;
   onDeleteRoute: (routeId: string) => Promise<void>;
@@ -52,7 +48,6 @@ type EquipmentFilter = 'all' | 'mesa' | 'jukebox' | 'grua';
 type ViewMode = 'cidades' | 'rotas';
 type VisitFilter = 'all' | 'visited' | 'not_visited';
 
-// Debounce function to delay search filtering
 const debounce = (func: (...args: any[]) => void, delay: number) => {
     let timeout: ReturnType<typeof setTimeout>;
     return (...args: any[]) => {
@@ -81,6 +76,7 @@ const ClientesView: React.FC<ClientesViewProps> = ({
     billings,
     routes,
     onAddCustomer, 
+    onUpdateCustomer,
     isSaving,
     showNotification,
     onFocusCustomer,
@@ -89,7 +85,6 @@ const ClientesView: React.FC<ClientesViewProps> = ({
     onDeleteCustomer,
     onPayDebtCustomer,
     onHistoryCustomer,
-    onShareCustomer, // Keep receiving the prop, but we'll override its use
     onOpenFastBilling,
     onLocationActions,
     onWhatsAppActions,
@@ -106,15 +101,9 @@ const ClientesView: React.FC<ClientesViewProps> = ({
   const [equipmentFilter, setEquipmentFilter] = useState<EquipmentFilter>('all');
   const [visitFilter, setVisitFilter] = useState<VisitFilter>('all');
   const [viewingCity, setViewingCity] = useState<string | null>(null);
-  const [viewingCustomerSheet, setViewingCustomerSheet] = useState<Customer | null>(null);
 
   const searchWrapperRef = useRef<HTMLDivElement>(null);
   const debouncedSetSearch = useCallback(debounce(setDebouncedSearchQuery, 300), []);
-
-  // New handler to show the printable sheet
-  const handleOpenPrintableSheet = (customer: Customer) => {
-    setViewingCustomerSheet(customer);
-  };
 
   useEffect(() => {
       debouncedSetSearch(searchQuery);
@@ -228,7 +217,7 @@ const ClientesView: React.FC<ClientesViewProps> = ({
             return (
                 <section key={city} className={`${cardBgColor} ${cardBorderColor} p-4 rounded-lg shadow-lg border`}>
                     <div className="flex flex-wrap justify-between items-center gap-x-4 gap-y-2 mb-4"><h2 className="text-2xl font-bold text-red-600 dark:text-red-500 flex items-center gap-2"><LocationMarkerIcon className="w-6 h-6 text-slate-400" />{city} ({cityCustomers.length})</h2><div className="flex items-center gap-4"><div className="flex items-center gap-1.5 text-green-500" title="Clientes visitados nos últimos 25 dias"><GreenBilliardBallIcon className="w-4 h-4" /><span className="font-bold">{stats.visited}</span></div><div className="flex items-center gap-1.5 text-red-500" title="Clientes com visita pendente"><RedBilliardBallIcon className="w-4 h-4" /><span className="font-bold">{stats.notVisited}</span></div><button onClick={() => handleCityCardClick(city)} className="text-sm font-semibold text-lime-600 dark:text-lime-400 hover:underline">Ver Todos &rarr;</button></div></div>
-                    <div className="flex flex-wrap justify-center -m-3">{cityCustomers.slice(0, 4).map(customer => (<div key={customer.id} className="w-full md:w-1/2 lg:w-1/3 xl:w-1/4 p-3"><CustomerCard customer={customer} billings={billings} hasActiveWarning={warnings.some(w => w.customerId === customer.id && !w.isResolved)} onBill={onBillCustomer} onEdit={onEditCustomer} onDelete={onDeleteCustomer} onPayDebt={onPayDebtCustomer} onHistory={onHistoryCustomer} onShare={handleOpenPrintableSheet} showNotification={showNotification} onFocusCustomer={onFocusCustomer} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden}/></div>))}</div>
+                    <div className="flex flex-wrap justify-center -m-3">{cityCustomers.slice(0, 4).map(customer => (<div key={customer.id} className="w-full md:w-1/2 lg:w-1/3 xl:w-1/4 p-3"><CustomerCard customer={customer} billings={billings} hasActiveWarning={warnings.some(w => w.customerId === customer.id && !w.isResolved)} onBill={onBillCustomer} onEdit={onEditCustomer} onDelete={onDeleteCustomer} onPayDebt={onPayDebtCustomer} onHistory={onHistoryCustomer} showNotification={showNotification} onFocusCustomer={onFocusCustomer} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden} onUpdateCustomer={onUpdateCustomer} /></div>))}</div>
                 </section>
             );
             })}
@@ -241,7 +230,7 @@ const ClientesView: React.FC<ClientesViewProps> = ({
                 return(
                     <section key={route.id} className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700">
                         <div className="flex justify-between items-center mb-4"><h2 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2"><MapIcon className="w-6 h-6 text-slate-400" />{route.name} ({route.customerIds.length})</h2><button onClick={() => onDeleteRoute(route.id)} className="text-red-500 hover:text-red-400 p-2 rounded-full hover:bg-red-500/10" title="Excluir Rota"><TrashIcon className="w-5 h-5"/></button></div>
-                        <div className="flex flex-col gap-4">{routeCustomers.map((customer, idx) => (<div key={customer.id} className="flex items-center gap-4"><span className="font-bold text-xl text-lime-500 w-8 text-center">{idx + 1}.</span><div className="flex-grow"><CustomerCard customer={customer} billings={billings} hasActiveWarning={warnings.some(w => w.customerId === customer.id && !w.isResolved)} onBill={onBillCustomer} onEdit={onEditCustomer} onDelete={onDeleteCustomer} onPayDebt={onPayDebtCustomer} onHistory={onHistoryCustomer} onShare={handleOpenPrintableSheet} showNotification={showNotification} onFocusCustomer={onFocusCustomer} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden}/></div></div>))}</div>
+                        <div className="flex flex-col gap-4">{routeCustomers.map((customer, idx) => (<div key={customer.id} className="flex items-center gap-4"><span className="font-bold text-xl text-lime-500 w-8 text-center">{idx + 1}.</span><div className="flex-grow"><CustomerCard customer={customer} billings={billings} hasActiveWarning={warnings.some(w => w.customerId === customer.id && !w.isResolved)} onBill={onBillCustomer} onEdit={onEditCustomer} onDelete={onDeleteCustomer} onPayDebt={onPayDebtCustomer} onHistory={onHistoryCustomer} showNotification={showNotification} onFocusCustomer={onFocusCustomer} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden} onUpdateCustomer={onUpdateCustomer} /></div></div>))}</div>
                     </section>
                 )
             })}
@@ -249,15 +238,7 @@ const ClientesView: React.FC<ClientesViewProps> = ({
         </div>
       )}
 
-      {viewingCity && (<CityCustomersModal city={viewingCity} customers={customersByCity[viewingCity] || []} warnings={warnings} billings={billings} onClose={() => setViewingCity(null)} onBillCustomer={onBillCustomer} onEditCustomer={onEditCustomer} onDeleteCustomer={onDeleteCustomer} onPayDebtCustomer={onPayDebtCustomer} onHistoryCustomer={onHistoryCustomer} onShareCustomer={handleOpenPrintableSheet} showNotification={showNotification} onFocusCustomer={onFocusCustomer} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden}/>)}
-      
-      {/* Render the correct view conditionally */}
-      {viewingCustomerSheet && (
-        <ThermalPrintView
-            customer={viewingCustomerSheet}
-            onClose={() => setViewingCustomerSheet(null)}
-        />
-      )}
+      {viewingCity && (<CityCustomersModal city={viewingCity} customers={customersByCity[viewingCity] || []} warnings={warnings} billings={billings} onClose={() => setViewingCity(null)} onBillCustomer={onBillCustomer} onEditCustomer={onEditCustomer} onDeleteCustomer={onDeleteCustomer} onPayDebtCustomer={onPayDebtCustomer} onHistoryCustomer={onHistoryCustomer} showNotification={showNotification} onFocusCustomer={onFocusCustomer} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden} onUpdateCustomer={onUpdateCustomer} />)}
     </>
   );
 };

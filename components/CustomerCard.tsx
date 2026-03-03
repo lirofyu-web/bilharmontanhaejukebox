@@ -10,14 +10,12 @@ import { BilliardIcon } from './icons/BilliardIcon';
 import { JukeboxIcon } from './icons/JukeboxIcon';
 import { CraneIcon } from './icons/CraneIcon';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
-import { ShareIcon } from './icons/ShareIcon';
 import { ReceiptIcon } from './icons/ReceiptIcon';
 import { RedBilliardBallIcon } from './icons/RedBilliardBallIcon';
 import { GreenBilliardBallIcon } from './icons/GreenBilliardBallIcon';
 import { YellowBilliardBallIcon } from './icons/YellowBilliardBallIcon';
 import { PurpleBilliardBallIcon } from './icons/PurpleBilliardBallIcon';
 import { ImageIcon } from './icons/ImageIcon';
-import FullScreenCustomerView from './FullScreenCustomerView';
 
 interface CustomerCardProps {
   customer: Customer;
@@ -27,7 +25,6 @@ interface CustomerCardProps {
   onDelete: (customer: Customer) => void;
   onPayDebt: (customer: Customer) => void;
   onHistory: (customer: Customer) => void;
-  onShare: (customer: Customer) => void;
   onLocationActions: (customer: Customer) => void;
   onWhatsAppActions: (customer: Customer) => void;
   onFinalizePendingPayment: (billing: Billing) => void;
@@ -36,6 +33,7 @@ interface CustomerCardProps {
   showNotification: (message: string, type?: 'success' | 'error') => void;
   onFocusCustomer: (customer: Customer) => void;
   areValuesHidden: boolean;
+  onUpdateCustomer: (updatedCustomer: Partial<Customer> & { id: string }) => void;
 }
 
 const EquipmentIcon: React.FC<{ type: Equipment['type'], className?: string }> = ({ type, className }) => {
@@ -67,9 +65,8 @@ const EquipmentDetailRow: React.FC<{ label: string; value: string | number | und
 };
 
 
-const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill, onEdit, onDelete, onPayDebt, onHistory, onShare, onLocationActions, onWhatsAppActions, hasActiveWarning, showNotification, onFocusCustomer, onFinalizePendingPayment, onPendingPaymentAction, areValuesHidden }) => {
+const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill, onEdit, onDelete, onPayDebt, onHistory, onLocationActions, onWhatsAppActions, hasActiveWarning, showNotification, onFocusCustomer, onFinalizePendingPayment, onPendingPaymentAction, areValuesHidden, onUpdateCustomer }) => {
     const [isExpanded, setIsExpanded] = useState(false);
-    const [isFullScreenViewOpen, setIsFullScreenViewOpen] = useState(false);
 
     const pendingBilling = useMemo(() => {
         return billings.find(b => 
@@ -98,6 +95,10 @@ const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill,
         }
     };
     
+    const handleLocationClick = () => {
+        onLocationActions(customer);
+    };
+
     const ActionButton: React.FC<{onClick: () => void, icon: React.ReactNode, label: string, colorClass: string, disabled?: boolean, isPrimary?: boolean, title?: string}> = ({onClick, icon, label, colorClass, disabled, isPrimary, title}) => (
         <button
             onClick={onClick}
@@ -123,136 +124,125 @@ const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill,
     };
 
     return (
-        <>
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 transition-shadow duration-300 hover:shadow-xl">
-                <div className="p-3">
-                    <div
-                        className="flex flex-wrap justify-between items-start gap-2 cursor-pointer group"
-                        onClick={() => onFocusCustomer(customer)}
-                    >
-                        <div className="flex-grow">
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 break-words group-hover:text-lime-600 dark:group-hover:text-lime-400 transition-colors">
-                                {customer.name}
-                                {hasActiveWarning && (
-                                    <div title="Aviso pendente">
-                                        <PurpleBilliardBallIcon className="w-4 h-4 pulse-indicator" />
-                                    </div>
-                                )}
-                            </h3>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 break-words">{customer.cidade} - Cobrador: {customer.linhaNumero}</p>
-                        </div>
-                        <div className="flex items-center flex-wrap justify-end gap-3">
-                            {visitIsPending ? (
-                                <div title="Visita Pendente">
-                                    <RedBilliardBallIcon className="w-4 h-4 text-red-500 pulse-indicator" />
-                                </div>
-                            ) : (
-                                <div title={`Visitado em ${new Date(customer.lastVisitedAt!).toLocaleDateString('pt-BR')}`}>
-                                    <GreenBilliardBallIcon className="w-4 h-4 text-green-500 pulse-indicator" />
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 transition-shadow duration-300 hover:shadow-xl">
+            <div className="p-3">
+                <div
+                    className="flex flex-wrap justify-between items-start gap-2 cursor-pointer group"
+                    onClick={() => onFocusCustomer(customer)}
+                >
+                    <div className="flex-grow">
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 break-words group-hover:text-lime-600 dark:group-hover:text-lime-400 transition-colors">
+                            {customer.name}
+                            {hasActiveWarning && (
+                                <div title="Aviso pendente">
+                                    <PurpleBilliardBallIcon className="w-4 h-4 pulse-indicator" />
                                 </div>
                             )}
-                            {hasDebt && (
-                                <div title={areValuesHidden ? "Dívida Pendente" : `Dívida: R$ ${customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold text-sm bg-amber-100 dark:bg-amber-900/50 px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-600">
-                                <YellowBilliardBallIcon className="w-4 h-4 text-amber-500 pulse-indicator" />
-                                <span>{areValuesHidden ? 'Dívida' : `R$ ${customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
-                                </div>
-                            )}
-                        </div>
+                        </h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 break-words">{customer.cidade} - Cobrador: {customer.linhaNumero}</p>
                     </div>
-                    
-                    <div className="mt-4 grid grid-cols-3 gap-1.5">
-                        <ActionButton 
-                            onClick={handleBillingAction} 
-                            icon={<ReceiptIcon className="w-5 h-5" />} 
-                            label={pendingBilling ? (customer.equipment && customer.equipment.length > 1 ? "Pgto." : "Finalizar") : "Faturar"}
-                            colorClass={pendingBilling ? "bg-amber-600" : ""}
-                            isPrimary={!pendingBilling}
-                            title={pendingBilling ? `Ações para pagamento pendente` : "Faturar novo equipamento"}
-                        />
-                        <ActionButton onClick={() => onEdit(customer)} icon={<PencilIcon className="w-5 h-5" />} label="Editar" colorClass="bg-sky-600" title='Editar Cliente' />
-                        <ActionButton 
-                            onClick={() => onPayDebt(customer)} 
-                            icon={<CurrencyDollarIcon className="w-5 h-5" />} 
-                            label={hasDebt ? "Pagar" : "Dívida"} 
-                            colorClass={hasDebt ? "bg-amber-600" : "bg-orange-500"}
-                            title={hasDebt ? "Registrar pagamento de dívida" : "Adicionar uma dívida avulsa"}
-                        />
-                        <ActionButton onClick={() => onHistory(customer)} icon={<HistoryIcon className="w-5 h-5" />} label="Histórico" colorClass="bg-indigo-600" />
-                        <ActionButton onClick={() => setIsFullScreenViewOpen(true)} icon={<ImageIcon className="w-5 h-5" />} label="Ficha" colorClass="bg-teal-600" title='Gerar Ficha do Cliente' />
-                        <ActionButton onClick={() => onDelete(customer)} icon={<TrashIcon className="w-5 h-5" />} label="Excluir" colorClass="bg-red-600" title='Excluir Cliente' />
-                        <ActionButton
-                            onClick={() => onWhatsAppActions(customer)}
-                            icon={<WhatsAppIcon className="w-5 h-5" />}
-                            label="WhatsApp"
-                            colorClass="bg-green-700"
-                            disabled={!customer.telefone}
-                            title={customer.telefone ? 'Enviar WhatsApp' : 'Cliente sem telefone'}
-                        />
-                        <ActionButton
-                            onClick={() => onLocationActions(customer)}
-                            icon={<LocationArrowIcon className="w-5 h-5" />}
-                            label="Localização"
-                            colorClass="bg-blue-700"
-                            disabled={!customer.latitude}
-                            title={customer.latitude ? 'Ver localização' : 'Cliente sem localização'}
-                        />
-                        <ActionButton onClick={() => onShare(customer)} icon={<ShareIcon className="w-5 h-5" />} label="Exportar" colorClass="bg-pink-600" />
-                    </div>
-                </div>
-
-                {customer.equipment && customer.equipment.length > 0 && (
-                    <div className="border-t border-slate-200 dark:border-slate-700">
-                        <button onClick={() => setIsExpanded(!isExpanded)} className="w-full flex justify-between items-center p-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50">
-                            <span className="font-semibold">Equipamentos ({customer.equipment.length})</span>
-                            <ChevronDownIcon className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                        </button>
-                        {isExpanded && (
-                            <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 space-y-3">
-                                {customer.equipment.map((equip) => (
-                                    <div key={equip.id} className="p-3 bg-slate-800 rounded-lg">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <EquipmentIcon type={equip.type} className="w-5 h-5" />
-                                            <span className="font-bold text-md text-white">{equipmentTypeText[equip.type]} {equip.numero}</span>
-                                        </div>
-                                        <div className="space-y-1 font-mono">
-                                            <EquipmentDetailRow label="Nº Relógio" value={equip.relogioNumero} />
-                                            <EquipmentDetailRow label="Leitura Anterior" value={equip.relogioAnterior} />
-                                            {equip.type === 'mesa' && (
-                                                equip.billingType === 'monthly' ? (
-                                                    <EquipmentDetailRow label="Mensalidade" value={`R$ ${(equip.monthlyFeeValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} areValuesHidden={areValuesHidden} />
-                                                ) : (
-                                                    <>
-                                                        <EquipmentDetailRow label="Vlr. Ficha" value={`R$ ${(equip.valorFicha || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} areValuesHidden={areValuesHidden} />
-                                                        <EquipmentDetailRow label="Parte Firma" value={`${equip.parteFirma || 0}%`} />
-                                                    </>
-                                                )
-                                            )}
-                                            {equip.type === 'jukebox' && (
-                                                <EquipmentDetailRow label="Parte Firma" value={`${equip.porcentagemJukeboxFirma || 0}%`} />
-                                            )}
-                                            {equip.type === 'grua' && (
-                                                <>
-                                                    {equip.aluguelPercentual != null && <EquipmentDetailRow label="Aluguel" value={`${equip.aluguelPercentual}%`} />}
-                                                    {equip.aluguelValor != null && <EquipmentDetailRow label="Aluguel" value={`R$ ${(equip.aluguelValor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} areValuesHidden={areValuesHidden} />}
-                                                    <EquipmentDetailRow label="Capacidade Pelúcias" value={equip.quantidadePelucia} />
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
+                    <div className="flex items-center flex-wrap justify-end gap-3">
+                        {visitIsPending ? (
+                            <div title="Visita Pendente">
+                                <RedBilliardBallIcon className="w-4 h-4 text-red-500 pulse-indicator" />
+                            </div>
+                        ) : (
+                            <div title={`Visitado em ${new Date(customer.lastVisitedAt!).toLocaleDateString('pt-BR')}`}>
+                                <GreenBilliardBallIcon className="w-4 h-4 text-green-500" />
+                            </div>
+                        )}
+                        {hasDebt && (
+                            <div title={areValuesHidden ? "Dívida Pendente" : `Dívida: R$ ${customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold text-sm bg-amber-100 dark:bg-amber-900/50 px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-600">
+                               <YellowBilliardBallIcon className="w-4 h-4 text-amber-500" />
+                               <span>{areValuesHidden ? 'Dívida' : `R$ ${customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
                             </div>
                         )}
                     </div>
-                )}
+                </div>
+                
+                <div className="mt-4 grid grid-cols-4 gap-1.5">
+                    <ActionButton 
+                        onClick={handleBillingAction} 
+                        icon={<ReceiptIcon className="w-5 h-5" />} 
+                        label={pendingBilling ? (customer.equipment?.length > 1 ? "Opções" : "Finalizar") : "Faturar"}
+                        colorClass={pendingBilling ? "bg-amber-600" : ""}
+                        isPrimary={!pendingBilling}
+                        title={pendingBilling ? `Ações para pagamento pendente` : "Faturar novo equipamento"}
+                    />
+                    <ActionButton onClick={() => onEdit(customer)} icon={<PencilIcon className="w-5 h-5" />} label="Editar" colorClass="bg-sky-600" title='Editar Cliente' />
+                    <ActionButton 
+                        onClick={() => onPayDebt(customer)} 
+                        icon={<CurrencyDollarIcon className="w-5 h-5" />} 
+                        label={hasDebt ? "Pagar" : "Dívida"} 
+                        colorClass={hasDebt ? "bg-amber-600" : "bg-orange-500"}
+                        title={hasDebt ? "Registrar pagamento de dívida" : "Adicionar uma dívida avulsa"}
+                    />
+                     <ActionButton onClick={() => onHistory(customer)} icon={<HistoryIcon className="w-5 h-5" />} label="Histórico" colorClass="bg-indigo-600" />
+                    <ActionButton onClick={() => onFocusCustomer(customer)} icon={<ImageIcon className="w-5 h-5" />} label="Ficha" colorClass="bg-teal-600" title='Ver Ficha Completa do Cliente' />
+                    <ActionButton
+                        onClick={() => onWhatsAppActions(customer)}
+                        icon={<WhatsAppIcon className="w-5 h-5" />}
+                        label="WhatsApp"
+                        colorClass="bg-green-700"
+                        disabled={!customer.telefone}
+                        title={customer.telefone ? 'Enviar WhatsApp' : 'Cliente sem telefone'}
+                    />
+                    <ActionButton
+                        onClick={handleLocationClick}
+                        icon={<LocationArrowIcon className="w-5 h-5" />}
+                        label="Localização"
+                        colorClass={customer.latitude ? "bg-blue-700" : "bg-slate-600"}
+                        title={customer.latitude ? 'Ver localização' : 'Salvar localização atual'}
+                    />
+                    <ActionButton onClick={() => onDelete(customer)} icon={<TrashIcon className="w-5 h-5" />} label="Excluir" colorClass="bg-red-600" title='Excluir Cliente' />
+                </div>
             </div>
 
-            {isFullScreenViewOpen && (
-                <FullScreenCustomerView 
-                    customer={customer} 
-                    onClose={() => setIsFullScreenViewOpen(false)} 
-                />
+            {customer.equipment && customer.equipment.length > 0 && (
+                <div className="border-t border-slate-200 dark:border-slate-700">
+                    <button onClick={() => setIsExpanded(!isExpanded)} className="w-full flex justify-between items-center p-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50">
+                        <span className="font-semibold">Equipamentos ({customer.equipment.length})</span>
+                        <ChevronDownIcon className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isExpanded && (
+                        <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                            {customer.equipment.map((equip) => (
+                                <div key={equip.id} className="p-3 bg-slate-800 rounded-lg">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <EquipmentIcon type={equip.type} className="w-5 h-5" />
+                                        <span className="font-bold text-md text-white">{equipmentTypeText[equip.type]} {equip.numero}</span>
+                                    </div>
+                                    <div className="space-y-1 font-mono">
+                                        <EquipmentDetailRow label="Nº Relógio" value={equip.relogioNumero} />
+                                        <EquipmentDetailRow label="Leitura Anterior" value={equip.relogioAnterior} />
+                                        {equip.type === 'mesa' && (
+                                            equip.billingType === 'monthly' ? (
+                                                <EquipmentDetailRow label="Mensalidade" value={`R$ ${(equip.monthlyFeeValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} areValuesHidden={areValuesHidden} />
+                                            ) : (
+                                                <>
+                                                    <EquipmentDetailRow label="Vlr. Ficha" value={`R$ ${(equip.valorFicha || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} areValuesHidden={areValuesHidden} />
+                                                    <EquipmentDetailRow label="Parte Firma" value={`${equip.parteFirma || 0}%`} />
+                                                </>
+                                            )
+                                        )}
+                                        {equip.type === 'jukebox' && (
+                                            <EquipmentDetailRow label="Parte Firma" value={`${equip.porcentagemJukeboxFirma || 0}%`} />
+                                        )}
+                                        {equip.type === 'grua' && (
+                                            <>
+                                                {equip.aluguelPercentual != null && <EquipmentDetailRow label="Aluguel" value={`${equip.aluguelPercentual}%`} />}
+                                                {equip.aluguelValor != null && <EquipmentDetailRow label="Aluguel" value={`R$ ${(equip.aluguelValor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} areValuesHidden={areValuesHidden} />}
+                                                <EquipmentDetailRow label="Capacidade Pelúcias" value={equip.quantidadePelucia} />
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             )}
-        </>
+        </div>
     );
 };
 

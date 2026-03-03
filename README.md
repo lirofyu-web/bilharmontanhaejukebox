@@ -4,32 +4,10 @@
 
 # Montanha Bilhar e Jukebox
 
-Este é um aplicativo para gestão de clientes, cobranças e equipamentos para a empresa Montanha Bilhar e Jukebox.
+Este é um sistema de gestão completo para a **Montanha Bilhar e Jukebox**, projetado para otimizar as operações diárias, incluindo:
 
-## Como executar localmente
-
-**Pré-requisitos:** [Node.js](https://nodejs.org)
-
-1. **Instale as dependências:**
-   ```bash
-   npm install
-   ```
-2. **Execute o aplicativo em modo de desenvolvimento:**
-   ```bash
-   npm run dev
-   ```
-   O aplicativo estará disponível em [http://localhost:5173](http://localhost:5173).
-
-## Como fazer o build para produção
-
-Para criar uma versão otimizada do aplicativo para produção, execute o seguinte comando:
-
-```bash
-npm run build
-```
-
-Os arquivos do build serão gerados no diretório `dist`.
-
-## Deploy
-
-O deploy deste aplicativo é feito no Firebase Hosting.
+- **Gestão de Clientes:** Cadastro, consulta e organização da base de clientes.
+- **Controle de Cobranças:** Geração e acompanhamento de cobranças, com emissão de recibos.
+- **Gerenciamento de Equipamentos:** Rastreamento de sinucas, jukeboxes e outros equipamentos.
+- **Otimização de Rotas:** Planejamento de rotas de visita e cobrança para maior eficiência.
+- **Relatórios e Dashboards:** Visualização de dados para apoiar a tomada de decisões.

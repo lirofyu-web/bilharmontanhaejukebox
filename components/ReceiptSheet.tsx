@@ -46,7 +46,7 @@ const ReceiptSheet: React.FC<ReceiptSheetProps> = ({ billing, isProvisional, qrC
             <ReceiptRow label="Reposição de Pelúcias:" value={billing.reposicaoPelucia || 0} />
             <hr className="border-dashed border-black my-2" />
             <ReceiptRow label="ALUGUEL (PAGO AO CLIENTE):" value={`R$ ${formatCurrency(billing.aluguelValor)}`} />
-            <div className="flex justify-between font-bold text-base pt-2 mt-2 border-t border-dashed border-black">
+            <div className="flex justify-between font-bold text-lg pt-2 mt-2 border-t border-dashed border-black">
                 <span>TOTAL (FIRMA):</span>
                 <span>R$ {formatCurrency(billing.valorTotal)}</span>
             </div>
@@ -66,13 +66,13 @@ const ReceiptSheet: React.FC<ReceiptSheetProps> = ({ billing, isProvisional, qrC
                         <>
                             <ReceiptRow label="Subtotal (Firma):" value={`R$ ${formatCurrency(billing.valorTotal)}`} />
                             <ReceiptRow label="Desconto / Bônus:" value={`- R$ ${formatCurrency(billing.valorBonus)}`} />
-                            <div className="flex justify-between font-bold text-base pt-2 mt-2 border-t border-dashed border-black">
+                            <div className="flex justify-between font-bold text-lg pt-2 mt-2 border-t border-dashed border-black">
                                 <span>TOTAL (FIRMA):</span>
                                 <span>R$ {formatCurrency(finalFirmaValue)}</span>
                             </div>
                         </>
                     ) : (
-                        <div className="flex justify-between font-bold text-base pt-2 mt-2 border-t border-dashed border-black">
+                        <div className="flex justify-between font-bold text-lg pt-2 mt-2 border-t border-dashed border-black">
                             <span>TOTAL (FIRMA):</span>
                             <span>R$ {formatCurrency(billing.valorTotal)}</span>
                         </div>
@@ -105,13 +105,13 @@ const ReceiptSheet: React.FC<ReceiptSheetProps> = ({ billing, isProvisional, qrC
                     <>
                         <ReceiptRow label="Subtotal (Firma):" value={`R$ ${formatCurrency(billing.valorTotal)}`} />
                         <ReceiptRow label="Desconto / Bônus:" value={`- R$ ${formatCurrency(billing.valorBonus)}`} />
-                        <div className="flex justify-between font-bold text-base pt-2 mt-2 border-t border-dashed border-black">
+                        <div className="flex justify-between font-bold text-lg pt-2 mt-2 border-t border-dashed border-black">
                             <span>TOTAL (FIRMA):</span>
                             <span>R$ {formatCurrency(finalFirmaValue)}</span>
                         </div>
                     </>
                 ) : (
-                    <div className="flex justify-between font-bold text-base pt-2 mt-2 border-t border-dashed border-black">
+                    <div className="flex justify-between font-bold text-lg pt-2 mt-2 border-t border-dashed border-black">
                         <span>TOTAL (FIRMA):</span>
                         <span>R$ {formatCurrency(billing.valorTotal)}</span>
                     </div>
@@ -121,10 +121,10 @@ const ReceiptSheet: React.FC<ReceiptSheetProps> = ({ billing, isProvisional, qrC
     };
 
     return (
-        <div className="font-bold text-sm">
+        <div style={{ fontFamily: '\'Courier New\', Courier, monospace' }} className="text-base">
             <div className="header text-center mb-4">
-                <h3 className="font-black text-lg">MONTANHA BILHAR & JUKEBOX</h3>
-                <p className="font-bold">{isProvisional ? 'DEMONSTRATIVO DE COBRANÇA' : 'ACERTO DE CONTAS'}</p>
+                <h3 className="font-black text-xl">MONTANHA BILHAR & JUKEBOX</h3>
+                <p className="font-bold text-base">{isProvisional ? 'DEMONSTRATIVO DE COBRANÇA' : 'ACERTO DE CONTAS'}</p>
                 <p>--------------------------------</p>
             </div>
             
@@ -148,8 +148,8 @@ const ReceiptSheet: React.FC<ReceiptSheetProps> = ({ billing, isProvisional, qrC
                             <span className="label">Pagamento:</span>
                             <span className="filler"></span>
                             <span className="value text-right">
-                                PAGO (&#160;)<br/>
-                                NAO PAGO (&#160;)
+                                PAGO ( )<br/>
+                                NAO PAGO ( )
                             </span>
                         </div>
                     )
@@ -163,19 +163,17 @@ const ReceiptSheet: React.FC<ReceiptSheetProps> = ({ billing, isProvisional, qrC
                 )}
             </div>
 
-            {qrCodeDataUrl ? (
+            {qrCodeDataUrl && (
                 <div className="text-center mt-4">
                     <p className="font-bold">Pague com PIX</p>
                     <img src={qrCodeDataUrl} alt="PIX QR Code" style={{ width: '150px', height: '150px', margin: '8px auto', border: '4px solid black' }} />
                     <p className="text-xs">Chave: +5543999581993</p>
                 </div>
-            ) : (
-                <PixQrCode />
             )}
 
             <hr className="border-dashed border-black my-2" />
 
-            <div className="text-xs text-center mt-2">
+            <div className="text-sm text-center mt-2">
                 <p className="font-bold">BILHAR MONTANHA</p>
                 <p>CNPJ: 76.089.440/0001-29</p>
                 <p>Jaguapitã - PR</p>
@@ -184,7 +182,7 @@ const ReceiptSheet: React.FC<ReceiptSheetProps> = ({ billing, isProvisional, qrC
 
             <hr className="border-dashed border-black my-2" />
 
-            <div className="text-xs text-center mt-4">
+            <div className="text-sm text-center mt-4">
                 <p className="font-bold">MONTANHA BILHAR E JUKEBOX</p>
                 <p>DIVERSÃO LEVADO A SÉRIO</p>
             </div>

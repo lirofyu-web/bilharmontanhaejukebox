@@ -33,7 +33,6 @@ import ActionFeedbackOverlay from './components/SuccessAnimationOverlay';
 import { optimizeRoute } from './utils/routeOptimizer';
 import { playSuccessSound, unlockAudio } from './utils/soundPlayer';
 import DebtStatementSheet from './components/DebtStatementSheet';
-import PrintableCustomerSheetView from './components/PrintableCustomerSheetView'; // Import the new component
 
 // Modals
 import BillingModal from './components/BillingModal';
@@ -44,7 +43,6 @@ import ActionModal from './components/ActionModal';
 import EquipmentSelectionModal from './components/EquipmentSelectionModal';
 import ReceiptActionsModal from './components/ReceiptActionsModal';
 import DebtReceiptActionsModal from './components/DebtReceiptActionsModal';
-import ShareCustomerModal from './components/ShareCustomerModal';
 import LabelGenerationModal from './components/LabelGenerationModal';
 import EditBillingModal from './components/EditBillingModal';
 import FastBillingModal from './components/FastBillingModal';
@@ -169,7 +167,6 @@ const App: React.FC = () => {
     const [equipmentSelectionModalState, setEquipmentSelectionModalState] = useState<{ isOpen: boolean; customer: Customer | null; }>({ isOpen: false, customer: null });
     const [receiptActionsModalState, setReceiptActionsModalState] = useState<{ isOpen: boolean; billing: Billing | null; isProvisional: boolean; }>({ isOpen: false, billing: null, isProvisional: false });
     const [debtReceiptActionsModalState, setDebtReceiptActionsModalState] = useState<{ isOpen: boolean; debtPayment: DebtPayment | null; customer: Customer | null }>({ isOpen: false, debtPayment: null, customer: null });
-    const [shareCustomerModalState, setShareCustomerModalState] = useState<{ isOpen: boolean; customer: Customer | null; }>({ isOpen: false, customer: null });
     const [labelGenerationModalState, setLabelGenerationModalState] = useState<{ isOpen: boolean; }>({ isOpen: false });
     const [editBillingModalState, setEditBillingModalState] = useState<{ isOpen: boolean; billing: Billing | null; }>({ isOpen: false, billing: null });
     const [isFastBillingModalOpen, setIsFastBillingModalOpen] = useState(false);
@@ -178,7 +175,6 @@ const App: React.FC = () => {
     const [saveLocationModalState, setSaveLocationModalState] = useState<{ isOpen: boolean; customer: Customer | null; }>({ isOpen: false, customer: null });
     const [addPhoneModalState, setAddPhoneModalState] = useState<{ isOpen: boolean; customer: Customer | null; }>({ isOpen: false, customer: null });
     const [isDeleteAllDataModalOpen, setIsDeleteAllDataModalOpen] = useState(false);
-    const [fileToMerge, setFileToMerge] = useState<File | null>(null);
     const [isGeolocating, setIsGeolocating] = useState(false);
     const [finalizePaymentModalState, setFinalizePaymentModalState] = useState<{ isOpen: boolean; billing: Billing | null; }>({ isOpen: false, billing: null });
     const [forgiveDebtModalState, setForgiveDebtModalState] = useState<{ isOpen: boolean; customer: Customer | null; }>({ isOpen: false, customer: null });
@@ -186,7 +182,6 @@ const App: React.FC = () => {
     const [isRouteCreationModalOpen, setIsRouteCreationModalOpen] = useState(false);
     
     const [focusedCustomer, setFocusedCustomer] = useState<Customer | null>(null);
-    const [customerToPrint, setCustomerToPrint] = useState<Customer | null>(null);
     
     // Saving state for UI feedback
     const [isSaving, setIsSaving] = useState(false);
@@ -593,33 +588,45 @@ const App: React.FC = () => {
             setIsSaving(false);
         }
     }, [customers, isOnline, user, showNotification]);
-    
-    const handleUpdateCustomer = useCallback(async (customer: Customer) => {
+
+    const handleUpdateCustomerPartial = useCallback(async (updateData: Partial<Customer> & { id: string }) => {
         if (!user) return;
         setIsSaving(true);
         const originalCustomers = customers;
-       
-        setCustomers(prev => prev.map(c => c.id === customer.id ? customer : c));
-        setEditCustomerModalState({ isOpen: false, customer: null });
+        const { id, ...payload } = updateData;
 
-        const { id, ...customerData } = customer;
+        const customerToUpdate = originalCustomers.find(c => c.id === id);
+        if (!customerToUpdate) {
+            showNotification('Cliente não encontrado para atualizar.', 'error');
+            setIsSaving(false);
+            return;
+        }
+        const updatedCustomer = { ...customerToUpdate, ...payload };
+
+        setCustomers(prev => prev.map(c => c.id === id ? updatedCustomer : c));
+
         try {
-            const firestorePayload = processPayloadForFirestore(customerData);
+            const firestorePayload = processPayloadForFirestore(payload);
             if (isOnline) {
                 await updateDoc(doc(db, `users/${user.uid}/customers`, id), firestorePayload);
             } else {
-                 await queueMutation({ action: 'update', collectionPath: 'customers', docId: id, payload: customerData });
+                await queueMutation({ action: 'update', collectionPath: 'customers', docId: id, payload });
             }
             playSuccessSound();
             setActionFeedbackState({ isOpen: true, variant: 'edit', message: 'Cliente Atualizado!' });
         } catch (error) {
-            showNotification('Erro ao atualizar cliente. Alterações desfeitas.', 'error');
+            showNotification('Erro ao atualizar cliente.', 'error');
             setCustomers(originalCustomers);
             console.error(error);
         } finally {
             setIsSaving(false);
         }
     }, [customers, isOnline, user, showNotification]);
+
+    const handleUpdateCustomer = useCallback(async (customer: Customer) => {
+        setEditCustomerModalState({ isOpen: false, customer: null });
+        await handleUpdateCustomerPartial(customer);
+    }, [handleUpdateCustomerPartial]);
     
     const handleDeleteCustomer = useCallback(async (customerToDelete: Customer) => {
         if (!user) return;
@@ -1218,14 +1225,6 @@ const App: React.FC = () => {
         setHistoryModalState({ isOpen: true, customer });
     }, []);
     
-    const handleOpenShareCustomerModal = useCallback((customer: Customer) => {
-        setShareCustomerModalState({ isOpen: true, customer });
-    }, []);
-    
-    const handlePrintCustomerSheet = useCallback((customer: Customer) => {
-        setCustomerToPrint(customer);
-    }, []);
-    
     const handleOpenLocationActions = useCallback((customer: Customer) => {
         if (customer.latitude && customer.longitude) {
             setLocationActionsModalState({ isOpen: true, customer });
@@ -1267,8 +1266,7 @@ const App: React.FC = () => {
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
-                const updatedCustomer = { ...customer, latitude, longitude };
-                handleUpdateCustomer(updatedCustomer);
+                handleUpdateCustomerPartial({ id: customer.id, latitude, longitude });
                 setIsGeolocating(false);
             },
             (error) => {
@@ -1279,7 +1277,7 @@ const App: React.FC = () => {
             },
             { enableHighAccuracy: true }
         );
-    }, [handleUpdateCustomer, showNotification]);
+    }, [handleUpdateCustomerPartial, showNotification]);
     
     const handleWhatsAppActions = useCallback((customer: Customer) => {
         if (customer.telefone) {
@@ -1294,10 +1292,9 @@ const App: React.FC = () => {
     const handleAddPhone = useCallback(async (phone: string) => {
         const customer = addPhoneModalState.customer;
         if (!customer) return;
-        const updatedCustomer = { ...customer, telefone: phone };
-        await handleUpdateCustomer(updatedCustomer);
+        await handleUpdateCustomerPartial({ id: customer.id, telefone: phone });
         setAddPhoneModalState({ isOpen: false, customer: null });
-    }, [addPhoneModalState.customer, handleUpdateCustomer]);
+    }, [addPhoneModalState.customer, handleUpdateCustomerPartial]);
 
     const handleInstallPrompt = () => {
         if (deferredPrompt) {
@@ -1542,13 +1539,13 @@ const App: React.FC = () => {
     const renderActiveView = () => {
         switch (currentView) {
             case 'DASHBOARD': return <DashboardView billings={billings} expenses={expenses} customers={customers} debtPayments={debtPayments} warnings={warnings} onAddWarning={handleAddWarning} onResolveWarning={handleResolveWarning} onDeleteWarning={handleDeleteWarning} lastBackupDate={lastBackupTimestamp} onNavigateToSettings={() => setView('CONFIGURACOES')} areValuesHidden={areValuesHidden} deletedCustomersLog={deletedCustomersLog} />;
-            case 'CLIENTES': return <ClientesView customers={customers} warnings={warnings} billings={billings} routes={routes} onAddCustomer={handleAddCustomer} isSaving={isSaving} showNotification={showNotification} onFocusCustomer={setFocusedCustomer} onBillCustomer={handleOpenBillingModal} onEditCustomer={handleOpenEditCustomerModal} onDeleteCustomer={handleOpenDeleteModal} onPayDebtCustomer={handleOpenDebtPaymentModal} onHistoryCustomer={handleOpenHistoryModal} onShareCustomer={handleOpenShareCustomerModal} onOpenFastBilling={() => setIsFastBillingModalOpen(true)} onLocationActions={handleOpenLocationActions} onWhatsAppActions={handleWhatsAppActions} onFinalizePendingPayment={(billing) => setFinalizePaymentModalState({ isOpen: true, billing })} areValuesHidden={areValuesHidden} onPendingPaymentAction={(customer, billing) => setPendingPaymentActionModalState({ isOpen: true, customer, pendingBilling: billing })} onOpenRouteCreator={() => setIsRouteCreationModalOpen(true)} onSaveRoute={handleSaveRoute} onDeleteRoute={handleDeleteRoute} />;
+            case 'CLIENTES': return <ClientesView customers={customers} warnings={warnings} billings={billings} routes={routes} onAddCustomer={handleAddCustomer} onUpdateCustomer={handleUpdateCustomerPartial} isSaving={isSaving} showNotification={showNotification} onFocusCustomer={setFocusedCustomer} onBillCustomer={handleOpenBillingModal} onEditCustomer={handleOpenEditCustomerModal} onDeleteCustomer={handleOpenDeleteModal} onPayDebtCustomer={handleOpenDebtPaymentModal} onHistoryCustomer={handleOpenHistoryModal} onOpenFastBilling={() => setIsFastBillingModalOpen(true)} onLocationActions={handleOpenLocationActions} onWhatsAppActions={handleWhatsAppActions} onFinalizePendingPayment={(billing) => setFinalizePaymentModalState({ isOpen: true, billing })} areValuesHidden={areValuesHidden} onPendingPaymentAction={(customer, billing) => setPendingPaymentActionModalState({ isOpen: true, customer, pendingBilling: billing })} onOpenRouteCreator={() => setIsRouteCreationModalOpen(true)} onSaveRoute={handleSaveRoute} onDeleteRoute={handleDeleteRoute} />;
             case 'COBRANCAS': return <CobrancasView billings={billings} customers={customers} debtPayments={debtPayments} onShowActions={(billing) => setReceiptActionsModalState({ isOpen: true, billing, isProvisional: false })} onEditBilling={handleOpenEditBillingModal} onDeleteBilling={handleDeleteBilling} onFinalizePayment={(billing) => setFinalizePaymentModalState({ isOpen: true, billing })} onPayDebtCustomer={handleOpenDebtPaymentModal} onPrintDebtStatement={(customer) => handlePrintPdfReceipt({ type: 'debt-statement', customer })} areValuesHidden={areValuesHidden} />;
             case 'DESPESAS': return <DespesasView expenses={expenses} onAddExpense={handleAddExpense} onDeleteExpense={handleDeleteExpense} areValuesHidden={areValuesHidden} />;
             case 'ROTAS': return <RotasView customers={customers} />;
             case 'RELATORIOS': return <RelatoriosView customers={customers} billings={billings} expenses={expenses} debtPayments={debtPayments} onThermalPrint={handleThermalPrint} areValuesHidden={areValuesHidden} showNotification={showNotification} />;
             case 'CONFIGURACOES': return <ConfiguracoesView onExportData={handleExportData} onMergeData={handleMergeData} theme={theme} setTheme={setTheme} showNotification={showNotification} deferredPrompt={deferredPrompt} onInstallPrompt={handleInstallPrompt} onDeleteAllData={() => setIsDeleteAllDataModalOpen(true)} onLogout={handleLogout} onSwitchAccount={handleSwitchAccount} onAddNewAccount={handleAddNewAccount} isPrivacyModeEnabled={isPrivacyModeEnabled} onActivatePrivacyMode={handleActivatePrivacyMode} onDeactivatePrivacyMode={handleDeactivatePrivacyMode} />;
-            default: return <DashboardView billings={billings} expenses={expenses} customers={customers} debtPayments={debtPayments} warnings={warnings} onAddWarning={handleAddWarning} onResolveWarning={handleResolveWarning} onDeleteWarning={handleDeleteWarning} lastBackupDate={lastBackupTimestamp} onNavigateToSettings={() => setView('CONFIGURACOE')} areValuesHidden={areValuesHidden} deletedCustomersLog={deletedCustomersLog} />;
+            default: return <DashboardView billings={billings} expenses={expenses} customers={customers} debtPayments={debtPayments} warnings={warnings} onAddWarning={handleAddWarning} onResolveWarning={handleResolveWarning} onDeleteWarning={handleDeleteWarning} lastBackupDate={lastBackupTimestamp} onNavigateToSettings={() => setView('CONFIGURACOES')} areValuesHidden={areValuesHidden} deletedCustomersLog={deletedCustomersLog} />;
         }
     };
 
@@ -1591,7 +1588,6 @@ const App: React.FC = () => {
             {equipmentSelectionModalState.isOpen && equipmentSelectionModalState.customer && <EquipmentSelectionModal isOpen={equipmentSelectionModalState.isOpen} onClose={() => setEquipmentSelectionModalState({ isOpen: false, customer: null })} customer={equipmentSelectionModalState.customer} onSelect={handleSelectEquipmentForBilling} />}
             {receiptActionsModalState.isOpen && receiptActionsModalState.billing && <ReceiptActionsModal isOpen={receiptActionsModalState.isOpen} onClose={() => setReceiptActionsModalState({ isOpen: false, billing: null, isProvisional: false })} billing={receiptActionsModalState.billing} isProvisional={receiptActionsModalState.isProvisional} isSharing={isSharing} onShare={() => handleShareReceipt(receiptActionsModalState.billing!)} onPrint={() => handlePrintPdfReceipt(receiptActionsModalState.billing!)} onPrintSunmi={() => handlePrintThermalReceipt(receiptActionsModalState.billing!)} showNotification={showNotification} />}
             {debtReceiptActionsModalState.isOpen && debtReceiptActionsModalState.debtPayment && <DebtReceiptActionsModal isOpen={debtReceiptActionsModalState.isOpen} onClose={() => setDebtReceiptActionsModalState({ isOpen: false, debtPayment: null, customer: null })} debtPayment={debtReceiptActionsModalState.debtPayment} isSharing={isSharing} onShare={() => handleShareReceipt(debtReceiptActionsModalState.debtPayment!)} onPrint={() => handlePrintPdfReceipt(debtReceiptActionsModalState.debtPayment!)} onPrintSunmi={() => handlePrintThermalReceipt(debtReceiptActionsModalState.debtPayment!)} showNotification={showNotification} />}
-            {shareCustomerModalState.isOpen && shareCustomerModalState.customer && <ShareCustomerModal isOpen={shareCustomerModalState.isOpen} onClose={() => setShareCustomerModalState({ isOpen: false, customer: null })} customer={shareCustomerModalState.customer} showNotification={showNotification} onPrintCustomer={handlePrintCustomerSheet} />}
             {labelGenerationModalState.isOpen && <LabelGenerationModal isOpen={labelGenerationModalState.isOpen} onClose={() => setLabelGenerationModalState({isOpen: false})} customers={customers} showNotification={showNotification} onConfirm={() => {}} />}
             {editBillingModalState.isOpen && editBillingModalState.billing && <EditBillingModal isOpen={editBillingModalState.isOpen} onClose={() => setEditBillingModalState({ isOpen: false, billing: null })} onConfirm={handleUpdateBilling} billing={editBillingModalState.billing} customers={customers} billings={billings} />}
             {isFastBillingModalOpen && <FastBillingModal isOpen={isFastBillingModalOpen} onClose={() => setIsFastBillingModalOpen(false)} onConfirm={handleConfirmFastBilling} />}
@@ -1624,15 +1620,7 @@ const App: React.FC = () => {
             {isRouteCreationModalOpen && <RouteCreationModal isOpen={isRouteCreationModalOpen} onClose={() => setIsRouteCreationModalOpen(false)} customers={customers} onConfirm={handleSaveRoute} isSaving={isSaving} />}
             
             {actionFeedbackState.isOpen && <ActionFeedbackOverlay isOpen={actionFeedbackState.isOpen} onEnd={handleAnimationEnd} variant={actionFeedbackState.variant} message={actionFeedbackState.message} />}
-            {focusedCustomer && <FullScreenCustomerView customer={focusedCustomer} onClose={() => setFocusedCustomer(null)} hasActiveWarning={warnings.some(w => w.customerId === focusedCustomer.id && !w.isResolved)} onBill={handleOpenBillingModal} onEdit={handleOpenEditCustomerModal} onDelete={handleOpenDeleteModal} onPayDebt={handleOpenDebtPaymentModal} onHistory={handleOpenHistoryModal} onShare={handleOpenShareCustomerModal} onLocationActions={handleOpenLocationActions} onWhatsAppActions={handleWhatsAppActions} billings={billings} debtPayments={debtPayments} onFinalizePendingPayment={(billing) => setFinalizePaymentModalState({ isOpen: true, billing })} onPendingPaymentAction={(customer, billing) => setPendingPaymentActionModalState({ isOpen: true, customer, pendingBilling: billing })} />}
-            
-            {customerToPrint && 
-                <PrintableCustomerSheetView 
-                    customer={customerToPrint} 
-                    onCancel={() => setCustomerToPrint(null)} 
-                    showNotification={showNotification} 
-                />
-            }
+            {focusedCustomer && <FullScreenCustomerView customer={focusedCustomer} onClose={() => setFocusedCustomer(null)} hasActiveWarning={warnings.some(w => w.customerId === focusedCustomer.id && !w.isResolved)} onBill={handleOpenBillingModal} onEdit={handleOpenEditCustomerModal} onDelete={handleOpenDeleteModal} onPayDebt={handleOpenDebtPaymentModal} onHistory={handleOpenHistoryModal} onLocationActions={handleOpenLocationActions} onWhatsAppActions={handleWhatsAppActions} billings={billings} debtPayments={debtPayments} onFinalizePendingPayment={(billing) => setFinalizePaymentModalState({ isOpen: true, billing })} onPendingPaymentAction={(customer, billing) => setPendingPaymentActionModalState({ isOpen: true, customer, pendingBilling: billing })} />}
         </div>
     );
 };

@@ -16,24 +16,16 @@ export const exportElementAsPDF = (element: HTMLElement, fileName: string): Prom
       return reject(new Error("Elemento para renderização não encontrado."));
     }
 
-    // Ensure jsPDF and html2canvas are loaded
     if (typeof jspdf === 'undefined' || typeof html2canvas === 'undefined') {
         return reject(new Error("As bibliotecas jsPDF ou html2canvas não foram carregadas."));
     }
 
     try {
-      console.log("Iniciando geração de PDF...");
-
       const canvas = await html2canvas(element, {
         scale: 2, // Higher scale for better quality
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        // Improve rendering of text and borders
-        onclone: (document) => {
-            // You can make adjustments to the cloned document before capture if needed
-            // For example, forcing a specific font rendering
-        }
       });
       
       const imgData = canvas.toDataURL('image/png');
@@ -42,16 +34,10 @@ export const exportElementAsPDF = (element: HTMLElement, fileName: string): Prom
       }
 
       const { jsPDF } = jspdf;
-      // PDF page settings (A4 portrait)
-      const pdfWidth = 210; // mm
-      const pdfHeight = 297; // mm
+      const pdfWidth = 210; // A4 width in mm
+      const pdfHeight = 297; // A4 height in mm
+      const ratio = canvas.width / canvas.height;
 
-      // Image dimensions
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = imgWidth / imgHeight;
-
-      // Calculate the best fit for the image on the A4 page
       let finalImgWidth = pdfWidth;
       let finalImgHeight = finalImgWidth / ratio;
 
@@ -60,9 +46,8 @@ export const exportElementAsPDF = (element: HTMLElement, fileName: string): Prom
         finalImgWidth = finalImgHeight * ratio;
       }
 
-      // Center the image on the page
       const x = (pdfWidth - finalImgWidth) / 2;
-      const y = 0; // Align to the top
+      const y = 0; // Align to top
 
       const doc = new jsPDF({
         orientation: 'portrait',
@@ -72,16 +57,16 @@ export const exportElementAsPDF = (element: HTMLElement, fileName: string): Prom
 
       doc.addImage(imgData, 'PNG', x, y, finalImgWidth, finalImgHeight);
 
-      // Open the PDF in a new tab
       const pdfBlob = doc.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
       
       const newWindow = window.open(pdfUrl, '_blank');
       if (newWindow) {
-        console.log("PDF aberto em nova aba com sucesso.");
-        URL.revokeObjectURL(pdfUrl); // Clean up the object URL
+        // Revoke the object URL after a delay to ensure the PDF has time to load.
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 2000);
         resolve();
       } else {
+        URL.revokeObjectURL(pdfUrl); // Clean up if window fails to open
         reject(new Error("Não foi possível abrir o PDF. Verifique se o seu navegador está bloqueando pop-ups."));
       }
 
