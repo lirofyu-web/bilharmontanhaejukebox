@@ -1,4 +1,3 @@
-// components/CustomerCard.tsx
 import React, { useState, useMemo } from 'react';
 import { Customer, Equipment, Billing } from '../types';
 import { PencilIcon } from './icons/PencilIcon';
@@ -17,6 +16,8 @@ import { RedBilliardBallIcon } from './icons/RedBilliardBallIcon';
 import { GreenBilliardBallIcon } from './icons/GreenBilliardBallIcon';
 import { YellowBilliardBallIcon } from './icons/YellowBilliardBallIcon';
 import { PurpleBilliardBallIcon } from './icons/PurpleBilliardBallIcon';
+import { ImageIcon } from './icons/ImageIcon';
+import FullScreenCustomerView from './FullScreenCustomerView';
 
 interface CustomerCardProps {
   customer: Customer;
@@ -68,6 +69,7 @@ const EquipmentDetailRow: React.FC<{ label: string; value: string | number | und
 
 const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill, onEdit, onDelete, onPayDebt, onHistory, onShare, onLocationActions, onWhatsAppActions, hasActiveWarning, showNotification, onFocusCustomer, onFinalizePendingPayment, onPendingPaymentAction, areValuesHidden }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isFullScreenViewOpen, setIsFullScreenViewOpen] = useState(false);
 
     const pendingBilling = useMemo(() => {
         return billings.find(b => 
@@ -101,16 +103,16 @@ const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill,
             onClick={onClick}
             disabled={disabled}
             title={title}
-            className={`flex-1 flex flex-col items-center justify-center p-3 rounded-lg text-sm font-medium transition-colors ${
-                disabled 
-                ? 'bg-slate-400 dark:bg-slate-700 text-slate-500 dark:text-slate-500 cursor-not-allowed' 
-                : isPrimary 
-                ? 'bg-[var(--color-primary)] text-[var(--color-primary-text)] hover:bg-[var(--color-primary-hover)]'
+            className={`flex flex-col items-center justify-center w-full p-2 rounded-lg font-medium transition-colors text-center ${
+                disabled
+                ? 'bg-slate-500 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                : isPrimary
+                ? 'bg-lime-600 text-white hover:bg-lime-700'
                 : `${colorClass} text-white hover:opacity-90`
             }`}
         >
             {icon}
-            <span className="mt-1.5">{label}</span>
+            <span className="mt-1 text-xs leading-tight tracking-tighter">{label}</span>
         </button>
     );
 
@@ -122,7 +124,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill,
 
     return (
         <>
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 transition-transform duration-300 hover:scale-105 hover:shadow-xl" style={{ willChange: 'transform, box-shadow' }}>
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 transition-shadow duration-300 hover:shadow-xl">
                 <div className="p-3">
                     <div
                         className="flex flex-wrap justify-between items-start gap-2 cursor-pointer group"
@@ -158,42 +160,44 @@ const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill,
                         </div>
                     </div>
                     
-                    <div className="mt-4 flex flex-wrap gap-2">
-                         <ActionButton 
+                    <div className="mt-4 grid grid-cols-3 gap-1.5">
+                        <ActionButton 
                             onClick={handleBillingAction} 
                             icon={<ReceiptIcon className="w-5 h-5" />} 
-                            label={pendingBilling ? (customer.equipment && customer.equipment.length > 1 ? "Pgto. Pendente" : "Finalizar Pgto.") : "Faturar"}
+                            label={pendingBilling ? (customer.equipment && customer.equipment.length > 1 ? "Pgto." : "Finalizar") : "Faturar"}
                             colorClass={pendingBilling ? "bg-amber-600" : ""}
                             isPrimary={!pendingBilling}
-                            title={pendingBilling ? `Ações para pagamento pendente de ${pendingBilling.equipmentType === 'mesa' ? 'Mesa' : 'Jukebox'} ${pendingBilling.equipmentNumero}` : "Faturar novo equipamento"}
+                            title={pendingBilling ? `Ações para pagamento pendente` : "Faturar novo equipamento"}
                         />
                         <ActionButton onClick={() => onEdit(customer)} icon={<PencilIcon className="w-5 h-5" />} label="Editar" colorClass="bg-sky-600" title='Editar Cliente' />
                         <ActionButton 
                             onClick={() => onPayDebt(customer)} 
                             icon={<CurrencyDollarIcon className="w-5 h-5" />} 
-                            label={hasDebt ? "Pagar Dívida" : "Adic. Dívida"} 
+                            label={hasDebt ? "Pagar" : "Dívida"} 
                             colorClass={hasDebt ? "bg-amber-600" : "bg-orange-500"}
                             title={hasDebt ? "Registrar pagamento de dívida" : "Adicionar uma dívida avulsa"}
                         />
                         <ActionButton onClick={() => onHistory(customer)} icon={<HistoryIcon className="w-5 h-5" />} label="Histórico" colorClass="bg-indigo-600" />
+                        <ActionButton onClick={() => setIsFullScreenViewOpen(true)} icon={<ImageIcon className="w-5 h-5" />} label="Ficha" colorClass="bg-teal-600" title='Gerar Ficha do Cliente' />
                         <ActionButton onClick={() => onDelete(customer)} icon={<TrashIcon className="w-5 h-5" />} label="Excluir" colorClass="bg-red-600" title='Excluir Cliente' />
+                        <ActionButton
+                            onClick={() => onWhatsAppActions(customer)}
+                            icon={<WhatsAppIcon className="w-5 h-5" />}
+                            label="WhatsApp"
+                            colorClass="bg-green-700"
+                            disabled={!customer.telefone}
+                            title={customer.telefone ? 'Enviar WhatsApp' : 'Cliente sem telefone'}
+                        />
+                        <ActionButton
+                            onClick={() => onLocationActions(customer)}
+                            icon={<LocationArrowIcon className="w-5 h-5" />}
+                            label="Localização"
+                            colorClass="bg-blue-700"
+                            disabled={!customer.latitude}
+                            title={customer.latitude ? 'Ver localização' : 'Cliente sem localização'}
+                        />
+                        <ActionButton onClick={() => onShare(customer)} icon={<ShareIcon className="w-5 h-5" />} label="Exportar" colorClass="bg-pink-600" />
                     </div>
-
-                    <div className="mt-4 flex flex-wrap gap-2 text-white">
-                        <button onClick={() => onWhatsAppActions(customer)} className={`flex-1 flex flex-col items-center justify-center p-2 rounded-md text-xs font-medium transition-colors ${customer.telefone ? 'bg-green-700 hover:bg-green-600' : 'bg-slate-600 hover:bg-slate-500'}`}>
-                            <WhatsAppIcon className="w-5 h-5" />
-                            <span className="mt-1">WhatsApp</span>
-                        </button>
-                         <button onClick={() => onLocationActions(customer)} className={`flex-1 flex flex-col items-center justify-center p-2 rounded-md text-xs font-medium transition-colors ${customer.latitude ? 'bg-blue-700 hover:bg-blue-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-white'}`}>
-                            <LocationArrowIcon className="w-5 h-5" />
-                            <span className="mt-1">Localização</span>
-                        </button>
-                        <button onClick={() => onShare(customer)} className="flex-1 flex flex-col items-center justify-center p-2 rounded-md text-xs font-medium transition-colors bg-pink-600 hover:bg-pink-500">
-                            <ShareIcon className="w-5 h-5" />
-                            <span className="mt-1">Exportar</span>
-                        </button>
-                    </div>
-
                 </div>
 
                 {customer.equipment && customer.equipment.length > 0 && (
@@ -241,6 +245,13 @@ const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill,
                     </div>
                 )}
             </div>
+
+            {isFullScreenViewOpen && (
+                <FullScreenCustomerView 
+                    customer={customer} 
+                    onClose={() => setIsFullScreenViewOpen(false)} 
+                />
+            )}
         </>
     );
 };

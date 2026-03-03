@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Customer } from '../types';
 import { CurrencyDollarIcon } from './icons/CurrencyDollarIcon';
-import { PrinterIcon } from './icons/PrinterIcon'; // Import the printer icon
+import { PrinterIcon } from './icons/PrinterIcon';
+import { TrashIcon } from './icons/TrashIcon';
 import { safeParseFloat } from '../utils';
 
 interface DebtPaymentModalProps {
@@ -10,7 +11,7 @@ interface DebtPaymentModalProps {
   onClose: () => void;
   onConfirm: (details: { amountPaidDinheiro: number; amountPaidPix: number } | { amountToAdd: number }) => void;
   onForgiveDebt: (customer: Customer) => void;
-  onPrintStatement: (customer: Customer) => void; // Add the new prop
+  onPrintStatement: (customer: Customer) => void;
   customer: Customer;
 }
 
@@ -46,7 +47,7 @@ const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({ isOpen, onClose, on
   }, [totalPaid, customer.debtAmount, isOpen, isAddingDebt]);
 
   const handleConfirm = useCallback(() => {
-    if (error) return;
+    if (error && !isAddingDebt) return;
 
     if (isAddingDebt) {
         const amountNum = safeParseFloat(amountToAdd);
@@ -56,16 +57,26 @@ const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({ isOpen, onClose, on
         }
         onConfirm({ amountToAdd: amountNum });
     } else {
+        if (totalPaid <= 0) {
+            setError('O valor total pago deve ser maior que zero.');
+            return;
+        }
         onConfirm({ 
             amountPaidDinheiro: safeParseFloat(paymentValues.dinheiro), 
             amountPaidPix: safeParseFloat(paymentValues.pix) 
         });
     }
-  }, [error, isAddingDebt, amountToAdd, paymentValues, onConfirm]);
+  }, [error, isAddingDebt, amountToAdd, paymentValues, onConfirm, totalPaid]);
   
   const handlePaymentChange = (field: keyof typeof paymentValues, value: string) => {
-    setPaymentValues(prev => ({ ...prev, [field]: value }));
+    const sanitizedValue = value.replace(/[^0-9.,]/g, '').replace(',', '.');
+    setPaymentValues(prev => ({ ...prev, [field]: sanitizedValue }));
   };
+  
+  const handleAmountToAddChange = (value: string) => {
+    const sanitizedValue = value.replace(/[^0-9.,]/g, '').replace(',', '.');
+    setAmountToAdd(sanitizedValue);
+  }
 
   if (!isOpen) return null;
 
@@ -77,73 +88,107 @@ const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({ isOpen, onClose, on
       aria-labelledby="debt-modal-title"
     >
       <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md border border-slate-700 animate-fade-in-up">
-        <div className="p-6 border-b border-slate-700">
-          <h2 id="debt-modal-title" className="text-2xl font-bold text-white">{isAddingDebt ? 'Adicionar Dívida Avulsa' : 'Pagar Dívida'}</h2>
-          <p className="text-slate-400 break-words">Cliente: {customer.name}</p>
-        </div>
-        <div className="p-6 space-y-6">
+        <header className="p-5 border-b border-slate-700">
+          <h2 id="debt-modal-title" className="text-xl font-bold text-white">{isAddingDebt ? 'Adicionar Dívida Avulsa' : 'Pagar Dívida'}</h2>
+          <p className="text-sm text-slate-400 break-words">Cliente: {customer.name}</p>
+        </header>
+        
+        <main className="p-5 space-y-6">
             <div className="text-center">
-                <p className="text-slate-400">Dívida Atual</p>
-                <p className={`text-3xl font-mono font-bold ${hasDebt ? 'text-red-400' : 'text-slate-400'}`}>R$ {customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                <p className="text-sm text-slate-400">Dívida Atual</p>
+                <p className={`text-3xl font-mono font-bold ${hasDebt ? 'text-red-400' : 'text-slate-400'}`}>
+                  R$ {customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
             </div>
+            
             {isAddingDebt ? (
                 <div>
                     <label htmlFor="amountToAdd" className="block text-sm font-medium text-slate-300 mb-1">Valor a Adicionar (R$)</label>
-                    <input type="text" inputMode="decimal" id="amountToAdd" value={amountToAdd} onChange={(e) => setAmountToAdd(e.target.value)} required className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white text-lg text-center font-mono focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                    <input 
+                      type="text" 
+                      inputMode="decimal" 
+                      id="amountToAdd" 
+                      value={amountToAdd} 
+                      onChange={(e) => handleAmountToAddChange(e.target.value)} 
+                      required 
+                      className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white text-lg text-center font-mono focus:outline-none focus:ring-2 focus:ring-amber-500" 
+                      placeholder="0,00"
+                    />
                 </div>
             ) : (
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-1">Valor em Dinheiro (R$)</label>
-                            <input type="text" inputMode="decimal" value={paymentValues.dinheiro} onChange={(e) => handlePaymentChange('dinheiro', e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-lime-500" />
+                            <input 
+                              type="text" 
+                              inputMode="decimal" 
+                              value={paymentValues.dinheiro} 
+                              onChange={(e) => handlePaymentChange('dinheiro', e.target.value)} 
+                              className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-lime-500" 
+                              placeholder="0,00"
+                            />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-1">Valor em PIX (R$)</label>
-                            <input type="text" inputMode="decimal" value={paymentValues.pix} onChange={(e) => handlePaymentChange('pix', e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-lime-500" />
+                            <input 
+                              type="text" 
+                              inputMode="decimal" 
+                              value={paymentValues.pix} 
+                              onChange={(e) => handlePaymentChange('pix', e.target.value)} 
+                              className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-lime-500" 
+                              placeholder="0,00"
+                            />
                         </div>
                     </div>
                      <div className="text-center pt-2">
-                        <p className="text-slate-400">Total Pago</p>
-                        <p className="text-xl font-mono font-bold text-lime-400">R$ {totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <p className="text-sm text-slate-400">Total Pago</p>
+                        <p className="text-xl font-mono font-bold text-lime-400">
+                          R$ {totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
                     </div>
                 </div>
             )}
-             {error && <p className="text-red-400 text-xs mt-1 text-center">{error}</p>}
-        </div>
-        <div className="p-6 bg-slate-800/50 rounded-b-lg flex justify-between items-center gap-4">
-          <div className="flex gap-2">
-            {hasDebt && (
-                <>
-                    <button 
-                        onClick={() => onForgiveDebt(customer)}
-                        className="bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-500 transition-colors text-sm"
-                    >
-                        Perdoar Dívida
-                    </button>
-                    <button 
-                        onClick={() => { onPrintStatement(customer); onClose(); }}
-                        className="bg-sky-600 text-white font-bold py-2 px-4 rounded-md hover:bg-sky-500 transition-colors text-sm inline-flex items-center gap-2"
-                        title="Imprimir Demonstrativo de Dívida"
-                    >
-                        <PrinterIcon className="w-4 h-4" />
-                        <span>Demonstrativo</span>
-                    </button>
-                </>
-            )}
+             {error && <p className="text-red-400 text-xs mt-2 text-center font-medium">{error}</p>}
+        </main>
+
+        <footer className="p-4 bg-slate-800/50 rounded-b-lg flex flex-col gap-3">
+          {/* Action buttons */}
+          <div className="flex flex-col sm:flex-row-reverse gap-3">
+              <button 
+                onClick={handleConfirm} 
+                disabled={!!error || (isAddingDebt ? safeParseFloat(amountToAdd) <= 0 : totalPaid <= 0)}
+                className="flex-1 justify-center bg-amber-600 text-white font-bold py-3 px-5 rounded-md hover:bg-amber-500 transition-colors inline-flex items-center gap-2 disabled:bg-slate-500 disabled:cursor-not-allowed"
+              >
+                <CurrencyDollarIcon className="w-5 h-5" />
+                {isAddingDebt ? 'Adicionar Dívida' : 'Confirmar Pagamento'}
+              </button>
+              <button onClick={onClose} className="flex-1 justify-center bg-slate-600 text-white font-bold py-3 px-5 rounded-md hover:bg-slate-500 transition-colors">
+                Cancelar
+              </button>
           </div>
-          <div className="flex gap-4">
-            <button onClick={onClose} className="bg-slate-600 text-white font-bold py-2 px-6 rounded-md hover:bg-slate-500 transition-colors">Cancelar</button>
-            <button 
-              onClick={handleConfirm} 
-              disabled={!!error || (isAddingDebt ? !amountToAdd : totalPaid <= 0)}
-              className="bg-amber-600 text-white font-bold py-2 px-6 rounded-md hover:bg-amber-500 transition-colors inline-flex items-center gap-2 disabled:bg-slate-500 disabled:cursor-not-allowed"
-            >
-              <CurrencyDollarIcon className="w-5 h-5" />
-              {isAddingDebt ? 'Adicionar Dívida' : 'Confirmar Pagamento'}
-            </button>
-          </div>
-        </div>
+          
+          {/* Secondary actions */}
+          {hasDebt && (
+            <div className="flex gap-3 pt-2 border-t border-slate-700/50">
+              <button 
+                  onClick={() => onForgiveDebt(customer)}
+                  className="flex-1 justify-center text-sm bg-red-800/50 text-red-300 font-semibold py-2 px-4 rounded-md hover:bg-red-700/60 hover:text-white transition-colors inline-flex items-center gap-2"
+              >
+                  <TrashIcon className="w-4 h-4"/>
+                  Perdoar Dívida
+              </button>
+              <button 
+                  onClick={() => { onPrintStatement(customer); onClose(); }}
+                  className="flex-1 justify-center text-sm bg-sky-800/50 text-sky-300 font-semibold py-2 px-4 rounded-md hover:bg-sky-700/60 hover:text-white transition-colors inline-flex items-center gap-2"
+                  title="Imprimir Demonstrativo de Dívida"
+              >
+                  <PrinterIcon className="w-4 h-4" />
+                  Demonstrativo
+              </button>
+            </div>
+          )}
+        </footer>
       </div>
       <style>{`
         @keyframes fade-in-up { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }

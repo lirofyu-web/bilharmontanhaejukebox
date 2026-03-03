@@ -213,35 +213,38 @@ const DebtorsList: React.FC<DebtorsListProps> = ({ debtorCustomers, totalDebt, o
             </button>
         </div>
 
-        {/* Mobile View */}
-        <div className="md:hidden space-y-3 p-3">
-            {debtorCustomers.length > 0 ? debtorCustomers.map((customer: Customer) => (
-                <div key={customer.id} className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="font-bold text-slate-900 dark:text-white break-words">{customer.name}</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">{customer.cidade}</p>
+        <div className="md:hidden">
+            <ul className="divide-y divide-slate-200 dark:divide-slate-700">
+                {debtorCustomers.length > 0 ? debtorCustomers.map((customer: Customer) => (
+                    <li key={customer.id} className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                                <p className="font-bold text-slate-900 dark:text-white truncate">{customer.name}</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{customer.cidade}</p>
+                            </div>
+                            <div className="text-right ml-4">
+                                <p className="font-mono font-bold text-lg text-red-500 dark:text-red-400">
+                                {areValuesHidden ? 'R$ •••,••' : `R$ ${customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                                </p>
+                            </div>
                         </div>
-                        <p className="font-mono font-bold text-lg text-red-500 dark:text-red-400">
-                           {areValuesHidden ? 'R$ •••,••' : `R$ ${customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                        </p>
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700 flex items-center gap-2">
-                        <button
-                            onClick={() => onPayDebtCustomer(customer)}
-                            className="flex-1 bg-amber-600 text-white font-bold py-2 px-3 rounded-md hover:bg-amber-500 text-sm flex items-center justify-center gap-2"
-                        >
-                           <CurrencyDollarIcon className="w-5 h-5" /> Pagar/Adicionar
-                        </button>
-                        <button
-                            onClick={() => onPrintDebtStatement(customer)}
-                            className="flex-1 bg-slate-600 text-white font-bold py-2 px-3 rounded-md hover:bg-slate-500 text-sm flex items-center justify-center gap-2"
-                        >
-                           <PrinterIcon className="w-5 h-5" /> Demonstrativo
-                        </button>
-                    </div>
-                </div>
-            )) : <p className="text-center py-10 text-slate-500 dark:text-slate-400 italic">Nenhum cliente com dívida pendente.</p>}
+                        <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                            <button
+                                onClick={() => onPayDebtCustomer(customer)}
+                                className="flex-1 bg-amber-600 text-white font-bold py-2 px-3 rounded-md hover:bg-amber-500 text-sm flex items-center justify-center gap-2"
+                            >
+                               <CurrencyDollarIcon className="w-5 h-5" /> Pagar/Adicionar
+                            </button>
+                            <button
+                                onClick={() => onPrintDebtStatement(customer)}
+                                className="flex-1 bg-slate-600 text-white font-bold py-2 px-3 rounded-md hover:bg-slate-500 text-sm flex items-center justify-center gap-2"
+                            >
+                               <PrinterIcon className="w-5 h-5" /> Demonstrativo
+                            </button>
+                        </div>
+                    </li>
+                )) : <p className="text-center py-10 text-slate-500 dark:text-slate-400 italic">Nenhum cliente com dívida pendente.</p>}
+            </ul>
         </div>
 
         {/* Desktop View */}

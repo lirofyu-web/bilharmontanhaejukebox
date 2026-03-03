@@ -18,7 +18,7 @@ import { MapIcon } from '../components/icons/MapIcon';
 import { PlusIcon } from '../components/icons/PlusIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
 import { RulerIcon } from '../components/icons/RulerIcon';
-import PrintableCustomerSheetView from '../components/PrintableCustomerSheetView'; // Import the new component
+import ThermalPrintView from '../components/ThermalPrintView'; // Import the correct component
 
 interface ClientesViewProps {
   customers: Customer[];
@@ -251,9 +251,9 @@ const ClientesView: React.FC<ClientesViewProps> = ({
 
       {viewingCity && (<CityCustomersModal city={viewingCity} customers={customersByCity[viewingCity] || []} warnings={warnings} billings={billings} onClose={() => setViewingCity(null)} onBillCustomer={onBillCustomer} onEditCustomer={onEditCustomer} onDeleteCustomer={onDeleteCustomer} onPayDebtCustomer={onPayDebtCustomer} onHistoryCustomer={onHistoryCustomer} onShareCustomer={handleOpenPrintableSheet} showNotification={showNotification} onFocusCustomer={onFocusCustomer} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden}/>)}
       
-      {/* Render the new printable view conditionally */}
+      {/* Render the correct view conditionally */}
       {viewingCustomerSheet && (
-        <PrintableCustomerSheetView
+        <ThermalPrintView
             customer={viewingCustomerSheet}
             onClose={() => setViewingCustomerSheet(null)}
         />

@@ -1,347 +1,255 @@
-// components/FullScreenCustomerView.tsx
-import React, { useMemo } from 'react';
-import { Customer, Equipment, Billing, DebtPayment } from '../types';
-import { XIcon } from './icons/XIcon';
-import { BilliardIcon } from './icons/BilliardIcon';
-import { JukeboxIcon } from './icons/JukeboxIcon';
-import { CraneIcon } from './icons/CraneIcon';
-import { RedBilliardBallIcon } from './icons/RedBilliardBallIcon';
-import { GreenBilliardBallIcon } from './icons/GreenBilliardBallIcon';
-import { YellowBilliardBallIcon } from './icons/YellowBilliardBallIcon';
-import { PurpleBilliardBallIcon } from './icons/PurpleBilliardBallIcon';
-import { PencilIcon } from './icons/PencilIcon';
-import { TrashIcon } from './icons/TrashIcon';
-import { CurrencyDollarIcon } from './icons/CurrencyDollarIcon';
-import { HistoryIcon } from './icons/HistoryIcon';
-import { WhatsAppIcon } from './icons/WhatsAppIcon';
-import { LocationArrowIcon } from './icons/LocationArrowIcon';
-import { ShareIcon } from './icons/ShareIcon';
-import { ReceiptIcon } from './icons/ReceiptIcon';
+import React, { useRef } from 'react';
+import ReactDOMServer from 'react-dom/server';
+import { Customer, Equipment } from '../types';
+import { formatDate } from '../utils/formatDate';
 
-interface FullScreenCustomerViewProps {
-  customer: Customer | null;
-  onClose: () => void;
-  hasActiveWarning: boolean;
-  onBill: (customer: Customer) => void;
-  onEdit: (customer: Customer) => void;
-  onDelete: (customer: Customer) => void;
-  onPayDebt: (customer: Customer) => void;
-  onHistory: (customer: Customer) => void;
-  onShare: (customer: Customer) => void;
-  onLocationActions: (customer: Customer) => void;
-  onWhatsAppActions: (customer: Customer) => void;
-  billings: Billing[];
-  debtPayments: DebtPayment[];
-  onFinalizePendingPayment: (billing: Billing) => void;
-  onPendingPaymentAction: (customer: Customer, billing: Billing) => void;
-}
+// --- Componente para o Recibo Térmico ---
+const ThermalReceipt = ({ customer }: { customer: Customer }) => (
+  <div style={{ fontFamily: 'monospace', fontSize: '12px', color: '#000', width: '300px', padding: '10px' }}>
+    <h2 style={{ textAlign: 'center', margin: '0 0 10px 0', fontSize: '16px' }}>MONTANHA BILHAR</h2>
+    <p style={{ textAlign: 'center', margin: '0' }}>CNPJ: 76.089.440/0001-29</p>
+    <p style={{ textAlign: 'center', margin: '0 0 15px 0' }}>Tel: (43) 99958-1993</p>
+    
+    <p><strong>CLIENTE:</strong> {customer.name}</p>
+    <p><strong>CIDADE:</strong> {customer.cidade}</p>
+    <p><strong>ENDEREÇO:</strong> {customer.endereco}</p>
+    <p><strong>DATA:</strong> {formatDate(new Date())}</p>
+    
+    <hr style={{ border: 'none', borderTop: '1px dashed #000', margin: '15px 0' }} />
 
-type HistoryItem = {
-    id: string;
-    date: Date;
-    type: 'billing' | 'payment';
-    description: string;
-    amount: number;
-    paymentMethod: 'pix' | 'dinheiro' | 'debito_negativo' | 'misto' | 'pending_payment';
-    equipmentType?: 'mesa' | 'jukebox' | 'grua';
-};
+    {customer.equipment?.map(equip => (
+      <div key={equip.id} style={{ marginBottom: '15px' }}>
+        <p style={{ textTransform: 'uppercase', fontWeight: 'bold' }}>{equip.type} Nº {equip.numero}</p>
+        <p>Nº Relógio: {equip.relogioNumero || '-'}</p>
+        <p>Leitura Ant.: {equip.relogioAnterior || '-'}</p>
+        {equip.type === 'mesa' && (
+          equip.billingType === 'monthly' ? (
+            <p>Mensal: R$ {equip.monthlyFeeValue?.toFixed(2)}</p>
+          ) : (
+            <>
+              <p>Vlr. Ficha: R$ {equip.valorFicha?.toFixed(2)}</p>
+              <p>% Firma: {equip.parteFirma}%</p>
+              <p>% Cliente: {100 - (equip.parteFirma || 0)}%</p>
+            </>
+          )
+        )}
+        {equip.type === 'jukebox' && (
+           <>
+            <p>% Firma: {equip.porcentagemJukeboxFirma}%</p>
+            <p>% Cliente: {100 - (equip.porcentagemJukeboxFirma || 0)}%</p>
+          </>
+        )}
+         {equip.type === 'grua' && (
+          <>
+            {equip.aluguelValor && <p>Aluguel: R$ {equip.aluguelValor.toFixed(2)}</p>}
+            {equip.aluguelPercentual && <p>Aluguel: {equip.aluguelPercentual}%</p>}
+            <p>Capacidade: {equip.quantidadePelucia} unid.</p>
+          </>
+        )}
+      </div>
+    ))}
 
-const PaymentMethodDisplay: React.FC<{ method: HistoryItem['paymentMethod'] }> = React.memo(({ method }) => {
-    const displayMethod = method === 'debito_negativo' ? 'negativo' : method === 'pending_payment' ? 'pendente' : method;
-    const styles: Record<string, string> = {
-        pix: 'bg-emerald-900/50 text-emerald-300 border-emerald-600',
-        dinheiro: 'bg-sky-900/50 text-sky-300 border-sky-600',
-        negativo: 'bg-amber-900/50 text-amber-300 border-amber-600',
-        misto: 'bg-indigo-900/50 text-indigo-300 border-indigo-600',
-        pendente: 'bg-slate-600/50 text-slate-300 border-slate-500',
-    };
-    const text: Record<string, string> = {
-        pix: 'PIX',
-        dinheiro: 'Dinheiro',
-        negativo: 'Negativo',
-        misto: 'Misto',
-        pendente: 'Pendente',
-    };
-
-    return (
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${styles[displayMethod]}`}>
-            {text[displayMethod]}
-        </span>
-    );
-});
-
-
-const ActionButton: React.FC<{onClick: () => void, icon: React.ReactNode, label: string, colorClass: string, disabled?: boolean, isPrimary?: boolean, title?: string}> = ({onClick, icon, label, colorClass, disabled, isPrimary, title}) => (
-    <button
-        onClick={onClick}
-        disabled={disabled}
-        title={title}
-        className={`flex-1 w-full flex flex-col items-center justify-center p-3 rounded-lg text-sm font-bold transition-colors ${
-            disabled 
-            ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed' 
-            : isPrimary 
-            ? 'bg-lime-600 text-white hover:bg-lime-500'
-            : `${colorClass} text-white hover:opacity-90`
-        }`}
-    >
-        {icon}
-        <span className="mt-1.5">{label}</span>
-    </button>
+    <hr style={{ border: 'none', borderTop: '1px dashed #000', margin: '15px 0' }} />
+    <p style={{ textAlign: 'justify', fontSize: '10px' }}>O(A) locatário(a) declara receber o(s) equipamento(s) em perfeito estado. Danos por mau uso serão de sua responsabilidade.</p>
+    <div style={{ marginTop: '30px', textAlign: 'center' }}>
+        <p>_________________________</p>
+        <p>{customer.name.toUpperCase()}</p>
+    </div>
+     <div style={{ marginTop: '30px', textAlign: 'center' }}>
+        <p>_________________________</p>
+        <p>MONTANHA BILHAR</p>
+    </div>
+  </div>
 );
 
-const FullScreenCustomerView: React.FC<FullScreenCustomerViewProps> = ({ customer, onClose, hasActiveWarning, onBill, onEdit, onDelete, onPayDebt, onHistory, onShare, onLocationActions, onWhatsAppActions, billings, debtPayments, onFinalizePendingPayment, onPendingPaymentAction }) => {
-  if (!customer) return null;
-  
-  const pendingBilling = useMemo(() => {
-    if (!customer) return null;
-    return billings.find(b => 
-        b.customerId === customer.id && 
-        b.paymentMethod === 'pending_payment' &&
-        (b.equipmentType === 'mesa' || b.equipmentType === 'jukebox')
-    );
-  }, [billings, customer]);
 
-  const hasDebt = customer.debtAmount > 0;
-  const twentyFiveDaysInMs = 25 * 24 * 60 * 60 * 1000;
-  const visitIsPending = !customer.lastVisitedAt || (new Date().getTime() - new Date(customer.lastVisitedAt).getTime()) > twentyFiveDaysInMs;
-  
-  const historyItems = useMemo(() => {
-    if (!customer) return [];
+interface FullScreenCustomerViewProps {
+  customer: Customer;
+  onClose: () => void;
+}
+
+const FullScreenCustomerView: React.FC<FullScreenCustomerViewProps> = ({ customer, onClose }) => {
+  const contractRef = useRef<HTMLDivElement>(null);
+
+  const handleA4Print = () => {
+    if (!contractRef.current) return;
+    const printContent = contractRef.current.innerHTML;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Não foi possível abrir a janela de impressão. Verifique o bloqueio de pop-ups.');
+      return;
+    }
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Ficha de Cliente - ${customer.name}</title>
+          <style>
+            @media print {
+              @page { size: A4; margin: 0; }
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .no-print { display: none !important; }
+            }
+            body { font-family: 'Inter', 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #374151; background-color: #f9fafb; }
+            h2, h3, h4 { margin: 0; padding: 0; font-weight: 600; }
+            p { margin: 0; }
+            .contract-container { max-width: 800px; margin: 2rem auto; background-color: white; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
+            .contract-header { background-color: #2c3e50; color: white; padding: 1.5rem; text-align: center; border-radius: 8px 8px 0 0; }
+            .contract-header h2 { font-size: 1.8em; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+            .contract-body { padding: 1rem; md:padding: 2rem; }
+            .section-title { font-size: 1.25rem; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
+            .party-section { display: grid; grid-template-columns: 1fr; md:grid-template-columns: 1fr 1fr; gap: 1rem; }
+            .party-block { margin-bottom: 1.5rem; }
+            .party-block p { font-size: 1rem; line-height: 1.5; }
+            .party-block strong { font-weight: 600; color: #2c3e50; }
+            .equipment-block { border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 1.5rem; page-break-inside: avoid; overflow: hidden; }
+            .equipment-header { padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; }
+            .equipment-header h4 { font-size: 1.15rem; color: #1f2937; font-weight: 700; }
+            .mesa-header { background-color: #e0f2fe; border-left: 5px solid #3b82f6; }
+            .jukebox-header { background-color: #f3e8ff; border-left: 5px solid #a855f7; }
+            .grua-header { background-color: #fed7aa; border-left: 5px solid #f97316; }
+            .equipment-details { padding: 1rem; background-color: #fdfdfe; display: grid; grid-template-columns: 1fr; sm:grid-template-columns: 1fr 1fr; gap: 0.75rem 1.5rem; }
+            .detail-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; padding: 0.25rem; }
+            .detail-item-label { font-weight: 500; color: #6b7280; }
+            .detail-item-value { font-weight: 600; color: #1f2937; }
+            .clause-block p { text-align: justify; font-size: 1rem; }
+            .date-stamp { text-align: center; margin-top: 2.5rem; font-size: 1rem; color: #6b7280; }
+            .signature-section { display: flex; flex-direction: column; md:flex-row; justify-content: space-around; margin-top: 3rem; page-break-inside: avoid; gap: 2rem; }
+            .signature-group { text-align: center; width: 100%; md:width: 45%; }
+            .signature-image { max-width: 100%; height: 80px; object-fit: contain; margin: 0 auto; }
+            .signature-placeholder { width: 100%; height: 80px; margin: 0 auto; border-bottom: 1px solid #d1d5db; }
+            .signature-line { border-top: 1px solid #4b5563; margin-top: 4rem; }
+            .signature-group p { margin: 0.5rem 0 0; font-size: 0.9rem; }
+          </style>
+        </head>
+        <body><div class="contract-container">${printContent}</div></body>
+      </html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => { printWindow.focus(); printWindow.print(); printWindow.close(); }, 300);
+  };
+
+  const handleThermalPrint = () => {
+    const receiptHtml = ReactDOMServer.renderToStaticMarkup(<ThermalReceipt customer={customer} />);
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Não foi possível abrir a janela de impressão. Verifique o bloqueio de pop-ups.');
+      return;
+    }
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Recibo - ${customer.name}</title>
+          <style>
+            @media print {
+              @page { margin: 0; }
+              body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body>${receiptHtml}</body>
+      </html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => { printWindow.focus(); printWindow.print(); printWindow.close(); }, 300);
+  };
+
+  const renderEquipmentDetails = (equip: Equipment) => {
+    let details: { [key: string]: string | number | null } = {};
+    if (equip.type === 'mesa') {
+      details = equip.billingType === 'monthly' ?
+        { 'Modalidade': 'Mensal', 'Valor': `R$ ${equip.monthlyFeeValue?.toFixed(2)}` } :
+        { 'Modalidade': 'Comissão', 'Ficha': `R$ ${equip.valorFicha?.toFixed(2)}`, '% Firma': `${equip.parteFirma}%`, '% Cliente': `${100 - (equip.parteFirma || 0)}%` };
+    } else if (equip.type === 'jukebox') {
+        details = { 'Modalidade': 'Comissão', '% Firma': `${equip.porcentagemJukeboxFirma}%`, '% Cliente': `${100 - (equip.porcentagemJukeboxFirma || 0)}%` };
+    } else if (equip.type === 'grua') {
+        details = { 'Capacidade': `${equip.quantidadePelucia} unid.` };
+        if(equip.aluguelValor) details['Aluguel'] = `R$ ${equip.aluguelValor.toFixed(2)}`;
+        if(equip.aluguelPercentual) details['Aluguel (%)'] = `${equip.aluguelPercentual}%`;
+    }
     
-    const customerBillings: HistoryItem[] = billings
-        .filter(b => b.customerId === customer.id)
-        .map(b => {
-            let description = 'Cobrança';
-            if (b.equipmentType === 'mesa') description += ' - Mesa';
-            if (b.equipmentType === 'jukebox') description += ' - Jukebox';
-            if (b.equipmentType === 'grua') description += ' - Grua';
+    const allDetails = [
+        { label: 'Nº Relógio', value: equip.relogioNumero },
+        { label: 'Leitura Ant.', value: equip.relogioAnterior },
+        ...Object.entries(details).map(([label, value]) => ({ label, value }))
+    ];
 
-            return {
-                id: b.id,
-                date: new Date(b.settledAt),
-                type: 'billing' as 'billing',
-                description: description,
-                amount: b.valorTotal,
-                paymentMethod: b.paymentMethod,
-                equipmentType: b.equipmentType,
-            };
-        });
-
-    const customerPayments: HistoryItem[] = debtPayments
-        .filter(p => p.customerId === customer.id)
-        .map(p => ({
-            id: p.id,
-            date: new Date(p.paidAt),
-            type: 'payment',
-            description: `Pagamento de Dívida (${p.paymentMethod === 'pix' ? 'PIX' : 'Dinheiro'})`,
-            amount: p.amountPaid,
-            paymentMethod: p.paymentMethod,
-        }));
-
-    return [...customerBillings, ...customerPayments].sort((a, b) => b.date.getTime() - a.date.getTime());
-
-  }, [customer, billings, debtPayments]);
-
-
-  const EquipmentIcon: React.FC<{type: Equipment['type']}> = ({ type }) => {
-    switch(type) {
-        case 'mesa': return <BilliardIcon className="w-5 h-5 text-cyan-400" />;
-        case 'jukebox': return <JukeboxIcon className="w-5 h-5 text-fuchsia-400" />;
-        case 'grua': return <CraneIcon className="w-5 h-5 text-orange-400" />;
-        default: return null;
-    }
-  };
-  
-  const handleBillingAction = () => {
-    if (!customer) return;
-    if (!pendingBilling) {
-        onBill(customer);
-        return;
-    }
-
-    const hasMultipleEquipment = customer.equipment && customer.equipment.length > 1;
-
-    if (hasMultipleEquipment) {
-        onPendingPaymentAction(customer, pendingBilling);
-    } else {
-        onFinalizePendingPayment(pendingBilling);
-    }
-  };
-
-  const colorStyles = {
-    mesa: { bg: 'bg-cyan-900/50', text: 'text-cyan-400' },
-    jukebox: { bg: 'bg-fuchsia-900/50', text: 'text-fuchsia-400' },
-    grua: { bg: 'bg-orange-900/50', text: 'text-orange-400' },
-    payment: { bg: 'bg-emerald-900/50', text: 'text-emerald-400' }
+    return allDetails.map(({ label, value }, index) => (
+      value ? (
+        <div key={index} className="detail-item">
+          <span className="detail-item-label">{label}:</span> <span className="detail-item-value">{String(value)}</span>
+        </div>
+      ) : null
+    ));
   };
 
   return (
-    <div 
-      className="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-50 p-4 animate-fade-in no-print"
-      role="dialog"
-      aria-modal="true"
-    >
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800/50 rounded-full p-2"
-        aria-label="Fechar"
-      >
-        <XIcon className="w-8 h-8" />
-      </button>
-
-      <div className="bg-slate-800 border-2 border-slate-700 rounded-2xl shadow-2xl w-full max-w-6xl h-full max-h-[95vh] flex flex-col p-6 lg:p-8">
-        
-        {/* Header */}
-        <header className="flex-shrink-0 mb-6">
-            <h1 className="text-4xl lg:text-6xl font-black text-white break-words">
-                {customer.name}
-            </h1>
-            <p className="text-xl lg:text-2xl text-slate-400 mt-1">
-                {customer.cidade} - Cobrador: {customer.linhaNumero}
-            </p>
-            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 items-center">
-                {visitIsPending ? (
-                    <div title="Visita Pendente" className="flex items-center gap-1.5 text-red-400 font-semibold text-sm">
-                        <RedBilliardBallIcon className="w-4 h-4 text-red-500" /> Visita Pendente
-                    </div>
-                ) : (
-                    <div title={`Visitado em ${new Date(customer.lastVisitedAt!).toLocaleDateString('pt-BR')}`} className="flex items-center gap-1.5 text-green-400 font-semibold text-sm">
-                        <GreenBilliardBallIcon className="w-4 h-4 text-green-500" /> Visitado em {new Date(customer.lastVisitedAt!).toLocaleDateString('pt-BR')}
-                    </div>
-                )}
-                {hasDebt && (
-                    <div title={`Dívida: R$ ${customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} className="flex items-center gap-1.5 text-amber-400 font-semibold text-sm">
-                        <YellowBilliardBallIcon className="w-4 h-4 text-amber-500" /> Dívida de R$ {customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                )}
-                {hasActiveWarning && (
-                     <div title="Aviso pendente" className="flex items-center gap-1.5 text-purple-400 font-semibold text-sm">
-                        <PurpleBilliardBallIcon className="w-4 h-4 text-purple-500" /> Aviso Pendente
-                    </div>
-                )}
-            </div>
+    <div className="fixed inset-0 z-[300] bg-slate-900/80 flex items-center justify-center p-2 sm:p-4 no-print">
+      <div className="w-full max-w-5xl h-full sm:h-[95vh] bg-gray-100 rounded-lg shadow-xl flex flex-col overflow-hidden">
+        <header className="flex-shrink-0 flex flex-wrap justify-between items-center p-3 border-b bg-white">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800">Ficha Profissional do Cliente</h2>
+          <div className='flex items-center'>
+            <button onClick={handleA4Print} className="bg-blue-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg hover:bg-blue-700 active:scale-95 transition-all text-xs sm:text-sm mr-2">Imprimir A4</button>
+            <button onClick={handleThermalPrint} className="bg-gray-700 text-white font-bold py-2 px-3 sm:px-4 rounded-lg hover:bg-gray-800 active:scale-95 transition-all text-xs sm:text-sm mr-2">Impressora Térmica</button>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-900 font-bold py-2 px-3 sm:px-4 text-xl sm:text-2xl">&times;</button>
+          </div>
         </header>
-
-        {/* Main Content */}
-        <main className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
-            
-            {/* Left Column: Actions & Info */}
-            <div className="lg:col-span-1 space-y-6 overflow-y-auto pr-2">
-                 <div className="bg-slate-900/50 p-4 rounded-xl">
-                    <h3 className="text-lg font-bold text-slate-300 mb-3">Ações Principais</h3>
-                    <div className="grid grid-cols-3 gap-3">
-                       <ActionButton 
-                            onClick={handleBillingAction} 
-                            icon={<ReceiptIcon className="w-6 h-6" />} 
-                            label={pendingBilling ? (customer.equipment && customer.equipment.length > 1 ? "Pgto. Pendente" : "Finalizar Pgto.") : "Faturar"}
-                            colorClass={pendingBilling ? "bg-amber-600" : ""}
-                            isPrimary={!pendingBilling}
-                            title={pendingBilling ? `Ações para pagamento pendente` : "Faturar novo equipamento"}
-                        />
-                       <ActionButton onClick={() => onEdit(customer)} icon={<PencilIcon className="w-6 h-6" />} label="Editar" colorClass="bg-sky-600" />
-                       <ActionButton onClick={() => onHistory(customer)} icon={<HistoryIcon className="w-6 h-6" />} label="Histórico" colorClass="bg-indigo-600" />
-                       <ActionButton onClick={() => onPayDebt(customer)} icon={<CurrencyDollarIcon className="w-6 h-6" />} label="Pagar Dívida" colorClass="bg-amber-600" disabled={!hasDebt} />
-                       <ActionButton onClick={() => onShare(customer)} icon={<ShareIcon className="w-6 h-6" />} label="Exportar" colorClass="bg-pink-600" />
-                       <ActionButton onClick={() => onDelete(customer)} icon={<TrashIcon className="w-6 h-6" />} label="Excluir" colorClass="bg-red-600" />
-                    </div>
+        <div ref={contractRef} className="overflow-y-auto printable-area bg-white">
+          <div className="contract-body">
+            <div className="contract-header"><h2>Montanha Bilhar e Jukebox</h2></div>
+            <div className='my-8 px-4 md:px-0'>
+              <h3 className="section-title">Partes Envolvidas</h3>
+              <div className="party-section">
+                <div className="party-block">
+                    <p><strong>LOCADORA:</strong> MONTANHA BILHAR E JUKEBOX</p>
+                    <p><strong>CNPJ:</strong> 76.089.440/0001-29</p>
+                    <p><strong>Telefone:</strong> (43) 99958-1993</p>
+                    <p><strong>Localidade:</strong> Jaguapitã, PR</p>
                 </div>
-                 <div className="bg-slate-900/50 p-4 rounded-xl">
-                    <h3 className="text-lg font-bold text-slate-300 mb-3">Contato e Localização</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button onClick={() => onWhatsAppActions(customer)} className={`flex-1 flex flex-col items-center justify-center p-3 rounded-lg text-sm font-bold transition-colors ${customer.telefone ? 'bg-green-700 hover:bg-green-600 text-white' : 'bg-sky-700 hover:bg-sky-600 text-white'}`}>
-                            <WhatsAppIcon className="w-6 h-6" />
-                            <span className="mt-1.5">{customer.telefone ? 'WhatsApp' : 'Adicionar Fone'}</span>
-                        </button>
-                        <button 
-                            onClick={() => onLocationActions(customer)} 
-                            className={`flex-1 flex flex-col items-center justify-center p-3 rounded-lg text-sm font-bold transition-colors ${customer.latitude ? 'bg-blue-700 hover:bg-blue-600 text-white' : 'bg-sky-700 hover:bg-sky-600 text-white'}`}
-                        >
-                            <LocationArrowIcon className="w-6 h-6" />
-                            <span className="mt-1.5">{customer.latitude ? 'Localização' : 'Salvar Local'}</span>
-                        </button>
-                    </div>
+                <div className="party-block">
+                    <p><strong>LOCATÁRIO(A):</strong> ${customer.name}</p>
+                    <p><strong>CPF/RG:</strong> ${customer.cpfRg || 'N/A'}</p>
+                    <p><strong>Endereço:</strong> ${customer.endereco || 'N/A'}, ${customer.cidade || 'N/A'}</p>
                 </div>
-                <div className="bg-slate-900/50 p-4 rounded-xl">
-                    <h3 className="text-lg font-bold text-slate-300 mb-2">Detalhes</h3>
-                    <p className="text-sm text-slate-400">Endereço: <span className="text-slate-200 font-medium">{customer.endereco || 'Não informado'}</span></p>
-                    <p className="text-sm text-slate-400">Telefone: <span className="text-slate-200 font-medium">{customer.telefone || 'Não informado'}</span></p>
-                    <p className="text-sm text-slate-400">CPF/RG: <span className="text-slate-200 font-medium">{customer.cpfRg || 'Não informado'}</span></p>
-                </div>
+              </div>
             </div>
 
-            {/* Right Column: Equipment & History */}
-            <div className="lg:col-span-2 space-y-6 overflow-y-auto pr-2">
-                <div className="bg-slate-900/50 p-4 rounded-xl">
-                    <h3 className="text-lg font-bold text-slate-300 mb-3">Equipamentos ({(customer.equipment || []).length})</h3>
-                    <div className="space-y-3">
-                        {(customer.equipment || []).length > 0 ? (customer.equipment || []).map((equip) => (
-                            <div key={equip.id} className="flex justify-between items-center text-sm p-3 bg-slate-800/60 rounded-lg border border-slate-700">
-                                <div className="flex items-center gap-3">
-                                    <EquipmentIcon type={equip.type} />
-                                    <div>
-                                        <span className="font-bold text-white capitalize text-base">{equip.type} {equip.numero}</span>
-                                        <p className="text-slate-400 text-xs">Relógio: {equip.relogioNumero || 'N/A'}</p>
-                                    </div>
-                                </div>
-                                <div className="text-slate-400 font-mono text-right">
-                                    <p className="text-xs">Leitura Anterior</p>
-                                    <p className="font-bold text-base text-white">{equip.relogioAnterior}</p>
-                                </div>
-                            </div>
-                        )) : (
-                            <p className="text-center py-10 text-slate-500">Nenhum equipamento cadastrado.</p>
-                        )}
-                    </div>
-                </div>
-                
-                <div className="bg-slate-900/50 p-4 rounded-xl">
-                    <h3 className="text-lg font-bold text-slate-300 mb-3">Histórico Completo</h3>
-                     {historyItems.length > 0 ? (
-                        <ul className="space-y-3">
-                            {historyItems.map(item => {
-                                const style = item.type === 'billing' ? colorStyles[item.equipmentType || 'mesa'] : colorStyles.payment;
-                                return (
-                                <li key={item.id} className="flex items-start gap-4 p-3 bg-slate-800/60 rounded-lg border border-slate-700">
-                                    <div className={`mt-1 flex-shrink-0 p-2 rounded-full ${style.bg}`}>
-                                        {item.type === 'billing' 
-                                            ? <ReceiptIcon className={`w-5 h-5 ${style.text}`} />
-                                            : <CurrencyDollarIcon className={`w-5 h-5 ${style.text}`} />
-                                        }
-                                    </div>
-                                    <div className="flex-grow">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <p className="font-semibold text-white">{item.description}</p>
-                                                <p className="text-sm text-slate-400">{item.date.toLocaleDateString('pt-BR')}</p>
-                                            </div>
-                                            <p className={`font-mono font-bold text-lg ${style.text}`}>
-                                                R$ {item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </p>
-                                        </div>
-                                        {item.paymentMethod && (
-                                            <div className="mt-2">
-                                                <PaymentMethodDisplay method={item.paymentMethod} />
-                                            </div>
-                                        )}
-                                    </div>
-                                </li>
-                            )})}
-                        </ul>
-                    ) : (
-                        <div className="text-center py-10 text-slate-500">
-                            <p>Nenhuma transação registrada para este cliente.</p>
-                        </div>
-                    )}
-                </div>
-
+            <div className='px-4 md:px-0'>
+              <h3 className="section-title">Equipamentos e Condições</h3>
+              {customer.equipment?.map((equip) => {
+                  const equipmentClasses = { mesa: 'mesa-header', jukebox: 'jukebox-header', grua: 'grua-header' };
+                  return (
+                      <div key={equip.id} className="equipment-block">
+                          <div className={`equipment-header ${equipmentClasses[equip.type]}`}>
+                              <h4>{equip.type.charAt(0).toUpperCase() + equip.type.slice(1)} Nº ${equip.numero}</h4>
+                          </div>
+                          <div className="equipment-details">{renderEquipmentDetails(equip)}</div>
+                      </div>
+                  );
+              })}
             </div>
 
-        </main>
+            <div className="clause-block mt-8 px-4 md:px-0">
+              <h3 className="section-title">Cláusula Contratual</h3>
+              <p>O(A) LOCATÁRIO(A) recebe o(s) equipamento(s) descrito(s) em perfeito estado, responsabilizando-se pela sua guarda. As condições financeiras da locação estão detalhadas por equipamento. Danos por mau uso, negligência ou vandalismo serão de responsabilidade do(a) LOCATÁRIO(A).</p>
+            </div>
+
+            <p className="date-stamp">Firmado em Jaguapitã, ${formatDate(new Date())}.</p>
+
+            <div className="signature-section px-4 md:px-0">
+                <div className="signature-group">
+                    {customer.companySignatureUrl ? <img src={customer.companySignatureUrl} alt="Assinatura da Empresa" className="signature-image" /> : <div className="signature-placeholder"></div>}
+                    <div className="signature-line"></div>
+                    <p><strong>MONTANHA BILHAR E JUKEBOX</strong></p><p>(LOCADORA)</p>
+                </div>
+                <div className="signature-group">
+                    {customer.signatureUrl ? <img src={customer.signatureUrl} alt="Assinatura do Cliente" className="signature-image" /> : <div className="signature-placeholder"></div>}
+                    <div className="signature-line"></div>
+                    <p><strong>{customer.name.toUpperCase()}</strong></p><p>(LOCATÁRIO(A))</p>
+                </div>
+            </div>
+          </div>
+        </div>
       </div>
-       <style>{`
-        @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
-        .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
-      `}</style>
     </div>
   );
 };
