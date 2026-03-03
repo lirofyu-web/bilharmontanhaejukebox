@@ -5,7 +5,7 @@ import { exportElementAsPDF } from '../utils/pdfGenerator';
 import { generateCustomerSheetHtml } from '../utils/staticSheetGenerator';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { XIcon } from './icons/XIcon';
-import ThermalPrintView from './ThermalPrintView'; // Import the new component
+import { PrinterIcon } from './icons/PrinterIcon';
 
 interface PrintableCustomerSheetViewProps {
   customer: Customer;
@@ -17,7 +17,6 @@ const PrintableCustomerSheetView: React.FC<PrintableCustomerSheetViewProps> = ({
   const printContentRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [sheetHtml, setSheetHtml] = useState('');
-  const [showThermalModal, setShowThermalModal] = useState(false); // State for the new modal
 
   useEffect(() => {
     if (customer) {
@@ -25,6 +24,59 @@ const PrintableCustomerSheetView: React.FC<PrintableCustomerSheetViewProps> = ({
       setSheetHtml(html);
     }
   }, [customer]);
+
+  const handlePrint = useCallback(() => {
+    if (!sheetHtml) {
+        showNotification('Conteúdo não encontrado para impressão.', 'error');
+        return;
+    }
+
+    const printWindow = window.open('', '', 'height=800,width=1000');
+    if (printWindow) {
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Ficha de Cadastro - ${customer.name}</title>
+                    <style>
+                        body { 
+                            margin: 0; 
+                            padding: 0; 
+                            background-color: #f4f4f4; 
+                            display: flex; 
+                            justify-content: center;
+                        }
+                        .print-button {
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            padding: 10px 20px;
+                            background-color: #0d6efd;
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            font-family: sans-serif;
+                            font-size: 16px;
+                            z-index: 10000;
+                        }
+                        @media print {
+                            body { background-color: white; }
+                            .print-button { display: none; }
+                            @page { margin: 0; size: A4; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <button class="print-button" onclick="window.print()">Imprimir</button>
+                    ${sheetHtml}
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+    }
+  }, [sheetHtml, customer.name, showNotification]);
+
 
   const handleOpenPdf = useCallback(async () => {
     if (!printContentRef.current) {
@@ -55,12 +107,12 @@ const PrintableCustomerSheetView: React.FC<PrintableCustomerSheetViewProps> = ({
         <header className="w-full max-w-5xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm p-3 shadow-md rounded-t-lg flex justify-between items-center mb-4 print:hidden">
           <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 ml-3">Visualizar Ficha</h3>
           <div className="flex items-center gap-2">
-            {/* Button to open the thermal print modal */}
             <button 
-              onClick={() => setShowThermalModal(true)}
-              className="bg-gray-500 text-white font-bold py-2 px-4 rounded-md hover:bg-gray-600 flex items-center gap-2 transition-colors"
+              onClick={handlePrint}
+              className="bg-sky-600 text-white font-bold py-2 px-4 rounded-md hover:bg-sky-500 flex items-center gap-2 transition-colors"
             >
-              Exportar para Impressora Térmica
+              <PrinterIcon className="w-5 h-5" />
+              Imprimir
             </button>
 
             <button 
@@ -113,14 +165,6 @@ const PrintableCustomerSheetView: React.FC<PrintableCustomerSheetViewProps> = ({
           }
         `}</style>
       </div>
-
-      {/* Thermal Print Modal */}
-      {showThermalModal && (
-        <ThermalPrintView 
-          customer={customer} 
-          onClose={() => setShowThermalModal(false)} 
-        />
-      )}
     </>
   );
 };

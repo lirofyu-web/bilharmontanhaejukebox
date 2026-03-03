@@ -71,15 +71,21 @@ interface FullScreenCustomerViewProps {
 const FullScreenCustomerView: React.FC<FullScreenCustomerViewProps> = ({ customer, onClose }) => {
   const contractRef = useRef<HTMLDivElement>(null);
 
-  const handleA4Print = () => {
-    if (!contractRef.current) return;
-    const printContent = contractRef.current.innerHTML;
+  const openPrintPreview = (content: string, title: string) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert('Não foi possível abrir a janela de impressão. Verifique o bloqueio de pop-ups.');
       return;
     }
-    printWindow.document.write(`
+    printWindow.document.write(content);
+    printWindow.document.title = title;
+    printWindow.document.close();
+  }
+
+  const handleA4Print = () => {
+    if (!contractRef.current) return;
+    const printContent = contractRef.current.innerHTML;
+    const html = `
       <html>
         <head>
           <title>Ficha de Cliente - ${customer.name}</title>
@@ -90,6 +96,7 @@ const FullScreenCustomerView: React.FC<FullScreenCustomerViewProps> = ({ custome
               .no-print { display: none !important; }
             }
             body { font-family: 'Inter', 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #374151; background-color: #f9fafb; }
+            .no-print { position: fixed; top: 1rem; right: 1rem; background-color: #007bff; color: white; padding: 0.8rem 1.2rem; border-radius: 5px; cursor: pointer; font-weight: bold; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10000; }
             h2, h3, h4 { margin: 0; padding: 0; font-weight: 600; }
             p { margin: 0; }
             .contract-container { max-width: 800px; margin: 2rem auto; background-color: white; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
@@ -121,21 +128,17 @@ const FullScreenCustomerView: React.FC<FullScreenCustomerViewProps> = ({ custome
             .signature-group p { margin: 0.5rem 0 0; font-size: 0.9rem; }
           </style>
         </head>
-        <body><div class="contract-container">${printContent}</div></body>
-      </html>
-    `);
-    printWindow.document.close();
-    setTimeout(() => { printWindow.focus(); printWindow.print(); printWindow.close(); }, 300);
+        <body>
+          <button class="no-print" onclick="window.print()">Imprimir</button>
+          <div class="contract-container">${printContent}</div>
+        </body>
+      </html>`;
+    openPrintPreview(html, `Ficha de Cliente - ${customer.name}`);
   };
 
   const handleThermalPrint = () => {
     const receiptHtml = ReactDOMServer.renderToStaticMarkup(<ThermalReceipt customer={customer} />);
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Não foi possível abrir a janela de impressão. Verifique o bloqueio de pop-ups.');
-      return;
-    }
-    printWindow.document.write(`
+    const html = `
       <html>
         <head>
           <title>Recibo - ${customer.name}</title>
@@ -143,14 +146,18 @@ const FullScreenCustomerView: React.FC<FullScreenCustomerViewProps> = ({ custome
             @media print {
               @page { margin: 0; }
               body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .no-print { display: none !important; }
             }
+             body { font-family: 'Inter', 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb; display: flex; justify-content: center;}
+            .no-print { position: fixed; top: 1rem; right: 1rem; background-color: #007bff; color: white; padding: 0.8rem 1.2rem; border-radius: 5px; cursor: pointer; font-weight: bold; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10000; }
           </style>
         </head>
-        <body>${receiptHtml}</body>
-      </html>
-    `);
-    printWindow.document.close();
-    setTimeout(() => { printWindow.focus(); printWindow.print(); printWindow.close(); }, 300);
+        <body>
+           <button class="no-print" onclick="window.print()">Imprimir</button>
+          ${receiptHtml}
+        </body>
+      </html>`;
+    openPrintPreview(html, `Recibo - ${customer.name}`);
   };
 
   const renderEquipmentDetails = (equip: Equipment) => {

@@ -45,6 +45,7 @@ export interface Customer {
   cidade: string;
   endereco: string;
   telefone: string;
+  birthDate: Date | null;
   latitude: number | null;
   longitude: number | null;
   equipment: Equipment[];

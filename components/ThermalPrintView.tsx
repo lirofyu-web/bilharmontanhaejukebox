@@ -1,13 +1,13 @@
 import React, { useRef, useCallback } from 'react';
-import { Customer, Equipment } from '../types'; // Importa os tipos corretos
+import { Customer, Equipment } from '../types'; 
 import { formatDate } from '../utils/formatDate';
+import { PrinterIcon } from './icons/PrinterIcon';
 
 interface ThermalPrintViewProps {
   customer: Customer;
   onClose: () => void;
 }
 
-// Função para formatar o tipo de equipamento para algo mais legível
 const formatEquipmentType = (type: 'mesa' | 'jukebox' | 'grua') => {
   switch (type) {
     case 'mesa': return 'Mesa de Sinuca';
@@ -16,6 +16,10 @@ const formatEquipmentType = (type: 'mesa' | 'jukebox' | 'grua') => {
     default: return 'Equipamento';
   }
 };
+
+const DetailLine: React.FC<{ label: string; value: string | number | null | undefined }> = ({ label, value }) => (
+  value != null ? <p>{`${label}: ${value}`}</p> : null
+);
 
 const ThermalPrintView: React.FC<ThermalPrintViewProps> = ({ customer, onClose }) => {
   const printAreaRef = useRef<HTMLDivElement>(null);
@@ -36,48 +40,53 @@ const ThermalPrintView: React.FC<ThermalPrintViewProps> = ({ customer, onClose }
     printWindow.document.write(`
       <html>
         <head>
-          <title>Ficha Cadastral</title>
+          <title>Ficha de Cadastro - ${customer.name}</title>
           <style>
-            @page { size: 50mm auto; margin: 2mm; }
-            /* Aplica negrito em todo o corpo do documento */
+            @page { size: A4; margin: 20mm; }
             body { 
-                font-family: 'Courier New', Courier, monospace; 
-                color: #000; 
-                line-height: 1.3; 
-                font-weight: bold;
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+                color: #333; 
+                line-height: 1.5;
+                padding: 20px;
+                background-color: #f0f0f0;
             }
-            p { margin: 0; padding: 0; font-size: 16px; }
-            .terms { font-size: 14px; white-space: pre-wrap; word-wrap: break-word; }
-            .signature { margin-top: 40px; text-align: center; }
+            .print-container { max-width: 800px; margin: auto; padding: 30px; background-color: #fff; border: 1px solid #ddd; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+            .print-button { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background-color: #0d6efd; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; z-index: 10001; }
+            @media print {
+              body { background-color: #fff; }
+              .print-button { display: none; }
+              .print-container { border: none; box-shadow: none; margin: 0; max-width: 100%; }
+            }
+            .inner-content p { font-family: 'Courier New', Courier, monospace; font-weight: bold; font-size: 15px; margin: 0 0 2px 0; padding: 0; line-height: 1.4; }
+            .inner-content .section-title { margin-top: 16px; }
+            .inner-content .equipment-block { margin-top: 8px; border-left: 3px solid #ccc; padding-left: 10px; }
+            .inner-content .terms { font-size: 12px; white-space: pre-wrap; word-wrap: break-word; line-height: 1.2; }
+            .inner-content .signature { margin-top: 40px; text-align: center; }
           </style>
         </head>
-        <body>${printContent}</body>
+        <body>
+            <button class="print-button" onclick="window.print()">Imprimir Ficha</button>
+            <div class="print-container">
+              <div class="inner-content">${printContent}</div>
+            </div>
+        </body>
       </html>
     `);
-
     printWindow.document.close();
-    setTimeout(() => {
-      try {
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-      } catch (e) { console.error("Falha ao imprimir:", e); }
-    }, 250);
-  }, []);
+    printWindow.focus();
+  }, [customer.name]);
 
-  const separator = <p>----------------------</p>;
+  const separator = <p>---------------------------------</p>;
 
   return (
     <div className="fixed inset-0 bg-slate-900/80 z-[200] flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-sm mx-auto flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto flex flex-col max-h-[90vh]">
         <header className="flex-shrink-0 flex justify-between items-center p-3 border-b border-slate-200">
           <h3 className="font-bold text-slate-800">Ficha de Cadastro</h3>
           <button onClick={onClose} className="p-2 rounded-full text-slate-800 hover:bg-slate-200">&times;</button>
         </header>
 
-        {/* Adicionado font-bold para a visualização em tela ser consistente com a impressão */}
         <div ref={printAreaRef} className="overflow-y-auto p-4 bg-white text-black font-bold">
-          {/* Cabeçalho da Empresa */}
           <div style={{ textAlign: 'center' }}>
             <p>MONTANHA BILHAR E JUKEBOX</p>
             <p>CNPJ: 76.089.440/0001-29</p>
@@ -87,35 +96,55 @@ const ThermalPrintView: React.FC<ThermalPrintViewProps> = ({ customer, onClose }
             {separator}
           </div>
 
-          {/* Dados do Cliente */}
-          <div style={{ marginTop: '16px' }}>
+          <div className="section-title">
             <p>DADOS DO CLIENTE</p>
-            <p>Nome/Razão Social:</p>
-            <p style={{ marginBottom: '8px' }}>{customer.name || 'N/A'}</p>
-            <p>CPF/CNPJ:</p>
-            <p style={{ marginBottom: '8px' }}>{customer.cpfRg || 'N/A'}</p>
-            <p>Endereço:</p>
-            <p style={{ marginBottom: '8px' }}>{customer.endereco || 'N/A'}</p>
-            <p>Cidade:</p>
-            <p style={{ marginBottom: '8px' }}>{customer.cidade || 'N/A'}</p>
-            <p>Telefone:</p>
-            <p style={{ marginBottom: '8px' }}>{customer.telefone || 'N/A'}</p>
-            <p>Data do Contrato:</p>
-            <p>{formatDate(customer.createdAt)}</p>
+            <p>Nome/Razão Social: {customer.name || 'N/A'}</p>
+            <p>CPF/CNPJ: {customer.cpfRg || 'N/A'}</p>
+            <p>Endereço: {customer.endereco || 'N/A'}</p>
+            <p>Cidade: {customer.cidade || 'N/A'}</p>
+            <p>Telefone: {customer.telefone || 'N/A'}</p>
+            <p>Data do Contrato: {formatDate(customer.createdAt)}</p>
           </div>
 
           {separator}
 
-          {/* Equipamentos do Cliente */}
-          <div style={{ marginTop: '8px' }}>
+          <div className="section-title">
             <p>EQUIPAMENTOS ({customer.equipment?.length || 0})</p>
             {customer.equipment && customer.equipment.length > 0 ? (
               customer.equipment.map((eq, index) => (
-                <div key={eq.id || index} style={{ marginTop: '8px' }}>
+                <div key={eq.id || index} className="equipment-block">
                   <p>{formatEquipmentType(eq.type)} - Nº {eq.numero || 'S/N'}</p>
-                  <p>Leitura Anterior: {eq.relogioAnterior ?? 'N/A'}</p>
-                  {eq.monthlyFeeValue != null && (
-                    <p>Mensalidade Fixa: R$ {eq.monthlyFeeValue.toFixed(2).replace('.', ',')}</p>
+                  <DetailLine label="Nº do Relógio" value={eq.relogioNumero} />
+                  <DetailLine label="Leitura Anterior" value={eq.relogioAnterior} />
+                  
+                  {/* Detalhes para Mesa */}
+                  {eq.type === 'mesa' && (
+                    eq.billingType === 'monthly' ? (
+                      <DetailLine label="Mensalidade Fixa" value={eq.monthlyFeeValue != null ? `R$ ${Number(eq.monthlyFeeValue).toFixed(2)}` : null} />
+                    ) : (
+                      <>
+                        <DetailLine label="Valor da Ficha" value={eq.valorFicha != null ? `R$ ${Number(eq.valorFicha).toFixed(2)}` : null} />
+                        <DetailLine label="Divisão (Firma)" value={eq.parteFirma != null ? `${eq.parteFirma}%` : null} />
+                        <DetailLine label="Divisão (Cliente)" value={eq.parteCliente != null ? `${eq.parteCliente}%` : null} />
+                      </>
+                    )
+                  )}
+
+                  {/* Detalhes para Jukebox */}
+                  {eq.type === 'jukebox' && (
+                    <>
+                      <DetailLine label="Divisão (Firma)" value={eq.porcentagemJukeboxFirma != null ? `${eq.porcentagemJukeboxFirma}%` : null} />
+                      <DetailLine label="Divisão (Cliente)" value={eq.porcentagemJukeboxCliente != null ? `${eq.porcentagemJukeboxCliente}%` : null} />
+                    </>
+                  )}
+
+                  {/* Detalhes para Grua */}
+                  {eq.type === 'grua' && (
+                     <>
+                       <DetailLine label="Aluguel (Fixo)" value={eq.aluguelValor && eq.aluguelValor > 0 ? `R$ ${eq.aluguelValor.toFixed(2)}` : null} />
+                       <DetailLine label="Aluguel (%)" value={eq.aluguelPercentual && eq.aluguelPercentual > 0 ? `${eq.aluguelPercentual}%` : null} />
+                       <DetailLine label="Capacidade Pelúcias" value={eq.quantidadePelucia} />
+                    </>
                   )}
                 </div>
               ))
@@ -126,21 +155,20 @@ const ThermalPrintView: React.FC<ThermalPrintViewProps> = ({ customer, onClose }
 
           {separator}
 
-          {/* Termos e Assinaturas */}
-          <div style={{ marginTop: '8px' }}>
+          <div className="section-title">
             <p>TERMOS DE LOCAÇÃO</p>
-            <p style={{ fontSize: '14px', whiteSpace: 'pre-wrap', wordWrap: 'break-word', lineHeight: 1.2 }}>
+            <p className="terms">
               O LOCATÁRIO RECEBE NESTA DATA O EQUIPAMENTO ACIMA IDENTIFICADO COM TODOS OS EQUIPAMENTOS INTERNOS E EXTERNOS EM PERFEITO ESTADO DE USO E CONSERVAÇÃO. O VALOR DA LOCAÇÃO SERÁ APURADO MEDIANTE O USO DO RESPECTIVO EQUIPAMENTO, SENDO QUE O PAGAMENTO OCORRERÁ NO PRAZO E NOS PERCENTUAIS ACIMA MENCIONADOS.
             </p>
           </div>
 
-          <div style={{ marginTop: '40px', textAlign: 'center' }}>
+          <div className="signature">
             <p>______________________</p>
             <p>{customer.name || 'Assinatura Cliente'}</p>
             <p>(Assinatura Cliente)</p>
           </div>
 
-          <div style={{ marginTop: '40px', textAlign: 'center' }}>
+          <div className="signature">
             <p>______________________</p>
             <p>Montanha Bilhar & Jukebox</p>
             <p>(Assinatura Firma)</p>
@@ -150,9 +178,10 @@ const ThermalPrintView: React.FC<ThermalPrintViewProps> = ({ customer, onClose }
         <footer className="flex-shrink-0 p-3 text-center bg-white border-t border-slate-200">
           <button 
             onClick={handlePrint} 
-            className="w-full bg-gray-600 text-white font-bold py-2 px-4 rounded-md hover:bg-gray-700"
+            className="w-full bg-sky-600 text-white font-bold py-2 px-4 rounded-md hover:bg-sky-500 flex items-center justify-center gap-2"
           >
-            Exportar para Impressora Térmica
+            <PrinterIcon className="w-5 h-5" />
+            Imprimir
           </button>
         </footer>
       </div>

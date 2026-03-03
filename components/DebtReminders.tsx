@@ -26,9 +26,10 @@ const DebtReminders: React.FC<DebtRemindersProps> = ({ customers, areValuesHidde
         <BellAlertIcon className="w-6 h-6 text-amber-600 dark:text-amber-400" />
         Lembretes de Dívidas Pendentes
       </h3>
-      <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
+      {/* Adicionado overflow-x-auto para rolagem horizontal em telas pequenas */}
+      <div className="overflow-x-auto space-y-3 max-h-64 overflow-y-auto pr-2">
         {debtors.map(customer => (
-          <div key={customer.id} className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 flex justify-between items-center gap-4">
+          <div key={customer.id} className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 flex justify-between items-center gap-4 min-w-[300px]">
             <div>
               <p className="font-bold text-slate-800 dark:text-white break-words">{customer.name}</p>
               <p className="text-sm font-mono font-semibold text-red-600 dark:text-red-400">
