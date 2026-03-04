@@ -51,6 +51,22 @@ const DespesasView: React.FC<DespesasViewProps> = ({ expenses, onAddExpense, onD
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
+  const getInitialDateRange = () => {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    return {
+        start: firstDay.toISOString().split('T')[0],
+        end: lastDay.toISOString().split('T')[0]
+    };
+  };
+  const [dateRange, setDateRange] = useState(getInitialDateRange);
+
+  const handleDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setDateRange(prev => ({ ...prev, [name]: value }));
+  }, []);
+
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     const amountNum = safeParseFloat(amount);
@@ -67,7 +83,14 @@ const DespesasView: React.FC<DespesasViewProps> = ({ expenses, onAddExpense, onD
   }, []);
 
   const sortedExpenses = useMemo(() => {
-    return [...expenses].sort((a, b) => {
+    return [...expenses]
+    .filter(expense => {
+        const itemDate = new Date(expense.date);
+        if (dateRange.start && new Date(dateRange.start + 'T00:00:00') > itemDate) return false;
+        if (dateRange.end && new Date(dateRange.end + 'T23:59:59') < itemDate) return false;
+        return true;
+    })
+    .sort((a, b) => {
       let compareA: any;
       let compareB: any;
 
@@ -83,7 +106,7 @@ const DespesasView: React.FC<DespesasViewProps> = ({ expenses, onAddExpense, onD
       if (compareA > compareB) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [expenses, sortKey, sortDirection]);
+  }, [expenses, sortKey, sortDirection, dateRange]);
   
   const handleSort = useCallback((key: SortKey) => {
     if (sortKey === key) {
@@ -118,7 +141,7 @@ const DespesasView: React.FC<DespesasViewProps> = ({ expenses, onAddExpense, onD
   );
 
   return (
-    <div>
+    <>
       <PageHeader title="Controle de Despesas" subtitle="Adicione e gerencie as despesas do seu negócio." />
 
       <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 mb-8">
@@ -136,6 +159,13 @@ const DespesasView: React.FC<DespesasViewProps> = ({ expenses, onAddExpense, onD
           </div>
           <button type="submit" className="md:col-start-4 w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-lime-500 text-white font-bold py-2 px-4 rounded-md hover:bg-lime-600"><PlusIcon className="w-5 h-5" /><span>Adicionar</span></button>
         </form>
+      </div>
+      
+      <div className="bg-white/75 dark:bg-slate-800/75 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 mb-8 flex flex-wrap items-center gap-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Filtrar por Período:</h3>
+          <input type="date" name="start" value={dateRange.start} onChange={handleDateChange} className="bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500" />
+          <span className="text-slate-500 dark:text-slate-400">até</span>
+          <input type="date" name="end" value={dateRange.end} onChange={handleDateChange} className="w-full sm:w-auto bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime-500" />
       </div>
       
       {/* Mobile Card View */}
@@ -170,7 +200,7 @@ const DespesasView: React.FC<DespesasViewProps> = ({ expenses, onAddExpense, onD
           </tbody>
         </table></div>
       </div>
-    </div>
+    </>
   );
 };
 

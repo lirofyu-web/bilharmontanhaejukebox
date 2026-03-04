@@ -305,8 +305,22 @@ const CobrancasView: React.FC<CobrancasViewProps> = ({
     const [searchQuery, setSearchQuery] = useState('');
     const [equipmentFilter, setEquipmentFilter] = useState<EquipmentFilter>('all');
     const [deletingBilling, setDeletingBilling] = useState<Billing | null>(null);
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    
+    const getInitialDateRange = () => {
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        return {
+            start: firstDay.toISOString().split('T')[0],
+            end: lastDay.toISOString().split('T')[0]
+        };
+    };
+    const [dateRange, setDateRange] = useState(getInitialDateRange);
+
+    const handleDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setDateRange(prev => ({ ...prev, [name]: value }));
+    }, []);
 
     const filteredAndSortedData = useMemo(() => {
         let items: Billing[] = [];
@@ -315,8 +329,8 @@ const CobrancasView: React.FC<CobrancasViewProps> = ({
                 if (equipmentFilter !== 'all' && billing.equipmentType !== equipmentFilter) return false;
                 if (searchQuery && !billing.customerName.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                 const itemDate = new Date(billing.settledAt);
-                if (startDate && new Date(startDate + 'T00:00:00') > itemDate) return false;
-                if (endDate && new Date(endDate + 'T23:59:59') < itemDate) return false;
+                if (dateRange.start && new Date(dateRange.start + 'T00:00:00') > itemDate) return false;
+                if (dateRange.end && new Date(dateRange.end + 'T23:59:59') < itemDate) return false;
                 return true;
             });
         }
@@ -334,7 +348,7 @@ const CobrancasView: React.FC<CobrancasViewProps> = ({
             if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [activeTab, billings, equipmentFilter, searchQuery, startDate, endDate, sortKey, sortDirection]);
+    }, [activeTab, billings, equipmentFilter, searchQuery, dateRange, sortKey, sortDirection]);
 
     const { pendingBillings, completedBillings } = useMemo(() => {
         const pending: Billing[] = [];
@@ -486,8 +500,8 @@ const CobrancasView: React.FC<CobrancasViewProps> = ({
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><SearchIcon className="w-5 h-5 text-slate-400" /></div>
                                 <input type="text" placeholder="Filtrar por nome do cliente..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 pl-10 pr-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-500"/>
                             </div>
-                            <div className="flex-shrink-0 w-full sm:w-auto"><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-1.5 px-3" /></div>
-                            <div className="flex-shrink-0 w-full sm:w-auto"><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-1.5 px-3" /></div>
+                            <div className="flex-shrink-0 w-full sm:w-auto"><input type="date" name="start" value={dateRange.start} onChange={handleDateChange} className="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-1.5 px-3" /></div>
+                            <div className="flex-shrink-0 w-full sm:w-auto"><input type="date" name="end" value={dateRange.end} onChange={handleDateChange} className="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-1.5 px-3" /></div>
                         </div>
                     </div>
                 )}
@@ -514,8 +528,7 @@ const CobrancasView: React.FC<CobrancasViewProps> = ({
                                     </button>
                                 )}
                             </div>
-                        ))
-}
+                        ))}
                     </div>
                 </div>
             )}

@@ -23,6 +23,7 @@ interface CityCustomersModalProps {
   onWhatsAppActions: (customer: Customer) => void;
   onFinalizePendingPayment: (billing: Billing) => void;
   onPendingPaymentAction: (customer: Customer, billing: Billing) => void;
+  onWarningClick: (customer: Customer) => void;
   areValuesHidden: boolean;
 }
 
@@ -44,6 +45,7 @@ const CityCustomersModal: React.FC<CityCustomersModalProps> = ({
   onWhatsAppActions,
   onFinalizePendingPayment,
   onPendingPaymentAction,
+  onWarningClick,
   areValuesHidden,
 }) => {
 
@@ -94,6 +96,7 @@ const CityCustomersModal: React.FC<CityCustomersModalProps> = ({
                       onWhatsAppActions={onWhatsAppActions}
                       onFinalizePendingPayment={onFinalizePendingPayment}
                       onPendingPaymentAction={onPendingPaymentAction}
+                      onWarningClick={onWarningClick}
                       areValuesHidden={areValuesHidden}
                     />
                 </div>

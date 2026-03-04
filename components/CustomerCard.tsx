@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Customer, Equipment, Billing } from '../types';
+import { Customer, Equipment, Billing, Warning } from '../types';
 import { PencilIcon } from './icons/PencilIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { CurrencyDollarIcon } from './icons/CurrencyDollarIcon';
@@ -30,6 +30,7 @@ interface CustomerCardProps {
   onFichaActions: (customer: Customer) => void;
   onFinalizePendingPayment: (billing: Billing) => void;
   onPendingPaymentAction: (customer: Customer, billing: Billing) => void;
+  onWarningClick: (customer: Customer) => void;
   hasActiveWarning: boolean;
   showNotification: (message: string, type?: 'success' | 'error') => void;
   onFocusCustomer: (customer: Customer) => void;
@@ -66,7 +67,7 @@ const EquipmentDetailRow: React.FC<{ label: string; value: string | number | und
 };
 
 
-const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill, onEdit, onDelete, onPayDebt, onHistory, onLocationActions, onWhatsAppActions, onFichaActions, hasActiveWarning, showNotification, onFocusCustomer, onFinalizePendingPayment, onPendingPaymentAction, areValuesHidden, onUpdateCustomer }) => {
+const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill, onEdit, onDelete, onPayDebt, onHistory, onLocationActions, onWhatsAppActions, onFichaActions, onWarningClick, hasActiveWarning, showNotification, onFocusCustomer, onFinalizePendingPayment, onPendingPaymentAction, areValuesHidden, onUpdateCustomer }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     const pendingBilling = useMemo(() => {
@@ -100,7 +101,12 @@ const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill,
         onLocationActions(customer);
     };
 
-    const ActionButton: React.FC<{onClick: () => void, icon: React.ReactNode, label: string, colorClass: string, disabled?: boolean, isPrimary?: boolean, title?: string}> = ({onClick, icon, label, colorClass, disabled, isPrimary, title}) => (
+    const handleWarningClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onWarningClick(customer);
+    };
+
+    const ActionButton: React.FC<{onClick: () => void, icon: React.ReactNode, label: string, colorClass: string, disabled?: boolean, isPrimary?: boolean, title?: string, pulse?: boolean}> = ({onClick, icon, label, colorClass, disabled, isPrimary, title, pulse}) => (
         <button
             onClick={onClick}
             disabled={disabled}
@@ -111,7 +117,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill,
                 : isPrimary
                 ? 'bg-lime-600 text-white hover:bg-lime-700'
                 : `${colorClass} text-white hover:opacity-90`
-            }`}
+            } ${pulse ? 'animate-blink-colors' : ''}`}
         >
             {icon}
             <span className="mt-1 text-xs leading-tight tracking-tighter">{label}</span>
@@ -135,9 +141,9 @@ const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill,
                         <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 break-words group-hover:text-lime-600 dark:group-hover:text-lime-400 transition-colors">
                             {customer.name}
                             {hasActiveWarning && (
-                                <div title="Aviso pendente">
+                                <button onClick={handleWarningClick} title="Aviso pendente">
                                     <PurpleBilliardBallIcon className="w-4 h-4 pulse-indicator" />
-                                </div>
+                                </button>
                             )}
                         </h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400 break-words">{customer.cidade} - Cobrador: {customer.linhaNumero}</p>
@@ -163,12 +169,12 @@ const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill,
                 
                 <div className="mt-4 space-y-1.5">
                     <div className="grid grid-cols-3 gap-1.5">
-                        <ActionButton 
-                            onClick={handleBillingAction} 
-                            icon={<ReceiptIcon className="w-5 h-5" />} 
+                        <ActionButton
+                            onClick={handleBillingAction}
+                            icon={<ReceiptIcon className="w-5 h-5" />}
                             label={pendingBilling ? (customer.equipment?.length > 1 ? "Opções" : "Finalizar") : "Faturar"}
-                            colorClass={pendingBilling ? "bg-amber-600" : ""}
-                            isPrimary={!pendingBilling}
+                            colorClass={pendingBilling ? "bg-lime-500" : "bg-yellow-500"}
+                            pulse={!!pendingBilling}
                             title={pendingBilling ? `Ações para pagamento pendente` : "Faturar novo equipamento"}
                         />
                         <ActionButton onClick={() => onEdit(customer)} icon={<PencilIcon className="w-5 h-5" />} label="Editar" colorClass="bg-sky-600" title='Editar Cliente' />
@@ -180,7 +186,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill,
                             title={hasDebt ? "Registrar pagamento de dívida" : "Adicionar uma dívida avulsa"}
                         />
                         <ActionButton onClick={() => onHistory(customer)} icon={<HistoryIcon className="w-5 h-5" />} label="Histórico" colorClass="bg-indigo-600" />
-                        <ActionButton onClick={() => onFichaActions(customer)} icon={<DocumentTextIcon className="w-5 h-5" />} label="Ficha" colorClass="bg-teal-600" title='Ver ou compartilhar ficha' />
+                        <ActionButton onClick={() => onFichaActions(customer)} icon={<DocumentTextIcon className="w-5 h-5" />} label="Ficha" colorClass="bg-pink-600" title='Ver ou compartilhar ficha' />
                         <ActionButton onClick={() => onDelete(customer)} icon={<TrashIcon className="w-5 h-5" />} label="Excluir" colorClass="bg-red-600" title='Excluir Cliente' />
                     </div>
                     <div className="grid grid-cols-2 gap-1.5">
