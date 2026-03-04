@@ -1,5 +1,6 @@
 // utils/receiptGenerator.ts
 import { Billing, DebtPayment, Equipment, Customer } from '../types';
+import { TERMOS_RECIBO_SIMPLIFICADO } from '../data/terms';
 
 const formatCurrency = (value: number | undefined) => (value || 0).toFixed(2);
 const formatCurrencyFicha = (value: number | undefined) => (value || 0).toFixed(2); // Use 2 for consistency on text receipts
@@ -184,9 +185,7 @@ export function generateCustomerShareText(customer: Customer): string {
 
   text += `\n--------------------------------\n`;
   text += `*TERMOS DE LOCAÇÃO:*\n\n`;
-  text += `1. O equipamento é cedido em perfeito estado.\n`;
-  text += `2. O valor da locação é apurado com base no uso e pago conforme os percentuais e prazos definidos.\n`;
-  text += `3. Danos por mau uso são de responsabilidade do locatário.`;
+  text += TERMOS_RECIBO_SIMPLIFICADO.replace(/\n/g, '\n');
 
   return text.trim();
 }

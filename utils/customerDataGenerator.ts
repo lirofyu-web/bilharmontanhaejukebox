@@ -1,4 +1,5 @@
 import { Customer, Equipment } from '../types';
+import { CLAUSULAS_CONTRATUAIS, TERMOS_DE_LOCACAO } from '../data/terms';
 
 const formatEquipment = (equip: Equipment): string => {
     const details: string[] = [];
@@ -60,13 +61,14 @@ export const generateCustomerDataText = (customer: Customer): string => {
         text += separator;
     }
 
+    // TERMOS DE LOCAÇÃO Section
+    text += `*TERMOS DE LOCAÇÃO:*\n`;
+    text += `${TERMOS_DE_LOCACAO}\n`;
+    text += separator;
+
     // CLÁUSULAS Section
     text += `*CLÁUSULAS CONTRATUAIS:*\n`;
-    text += `1. O equipamento é cedido em regime de locação, permanecendo de propriedade da LOCADORA.\n`;
-    text += `2. O LOCATÁRIO é responsável pela conservação do equipamento, respondendo por danos causados por mau uso ou negligência.\n`;
-    text += `3. Fica proibida a remoção do equipamento do local de instalação sem autorização prévia da LOCADORA.\n`;
-    text += `4. O presente contrato tem prazo indeterminado, podendo ser rescindido por qualquer das partes com aviso prévio de 30 dias.\n`;
-    text += `5. A manutenção e o suporte técnico serão realizados exclusivamente pela equipe da LOCADORA.\n`;
+    text += `${CLAUSULAS_CONTRATUAIS}\n`;
     text += separator;
 
     // DATA Section

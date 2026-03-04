@@ -590,7 +590,7 @@ const DashboardView: React.FC<DashboardViewProps> = React.memo(({ billings, expe
     }, [billings, expenses, customers, debtPayments, currentDate]);
     
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 overflow-x-hidden">
             <PageHeader 
                 title="INÍCIO"
                 subtitle="Visão geral e desempenho do seu negócio."

@@ -1,6 +1,7 @@
+
 // views/ClientesView.tsx
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Customer, Warning, Billing, Route } from '../types';
+import { Customer, Warning, Billing, Route, Equipment } from '../types';
 import AddCustomerForm from '../components/AddCustomerForm';
 import CustomerCard from '../components/CustomerCard';
 import PageHeader from '../components/PageHeader';
@@ -9,6 +10,7 @@ import { SearchIcon } from '../components/icons/SearchIcon';
 import { QrCodeIcon } from '../components/icons/QrCodeIcon';
 import { LocationMarkerIcon } from '../components/icons/LocationMarkerIcon';
 import CityCustomersModal from '../components/CityCustomersModal';
+import CityListModal from '../components/CityListModal';
 import { GreenBilliardBallIcon } from '../components/icons/GreenBilliardBallIcon';
 import { RedBilliardBallIcon } from '../components/icons/RedBilliardBallIcon';
 import { BilliardIcon } from '../components/icons/BilliardIcon';
@@ -19,6 +21,7 @@ import { MapIcon } from '../components/icons/MapIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
 import { RulerIcon } from '../components/icons/RulerIcon';
 import WarningDetailsModal from '../components/WarningDetailsModal';
+import HistoryModal from '../components/HistoryModal';
 
 interface ClientesViewProps {
   customers: Customer[];
@@ -34,7 +37,6 @@ interface ClientesViewProps {
   onEditCustomer: (customer: Customer) => void;
   onDeleteCustomer: (customer: Customer) => void;
   onPayDebtCustomer: (customer: Customer) => void;
-  onHistoryCustomer: (customer: Customer) => void;
   onOpenFastBilling: () => void;
   onLocationActions: (customer: Customer) => void;
   onWhatsAppActions: (customer: Customer) => void;
@@ -86,7 +88,6 @@ const ClientesView: React.FC<ClientesViewProps> = ({
     onEditCustomer,
     onDeleteCustomer,
     onPayDebtCustomer,
-    onHistoryCustomer,
     onOpenFastBilling,
     onLocationActions,
     onWhatsAppActions,
@@ -103,8 +104,10 @@ const ClientesView: React.FC<ClientesViewProps> = ({
   const [equipmentFilter, setEquipmentFilter] = useState<EquipmentFilter>('all');
   const [visitFilter, setVisitFilter] = useState<VisitFilter>('all');
   const [viewingCity, setViewingCity] = useState<string | null>(null);
+  const [isCityListModalOpen, setIsCityListModalOpen] = useState(false);
   const [focusedCustomer, setFocusedCustomer] = useState<Customer | null>(null);
   const [viewingWarning, setViewingWarning] = useState<{customer: Customer, warning: Warning} | null>(null);
+  const [historyCustomer, setHistoryCustomer] = useState<Customer | null>(null);
 
   const searchWrapperRef = useRef<HTMLDivElement>(null);
   const debouncedSetSearch = useCallback(debounce(setDebouncedSearchQuery, 300), []);
@@ -113,11 +116,17 @@ const ClientesView: React.FC<ClientesViewProps> = ({
       debouncedSetSearch(searchQuery);
   }, [searchQuery, debouncedSetSearch]);
 
+  const allEquipments = useMemo(() => customers.flatMap(c => c.equipment || []), [customers]);
+
   const handleWarningClick = (customer: Customer) => {
     const warning = warnings.find(w => w.customerId === customer.id && !w.isResolved);
     if (warning) {
         setViewingWarning({ customer, warning });
     }
+  };
+
+  const onHistoryCustomer = (customer: Customer) => {
+    setHistoryCustomer(customer);
   };
 
   const filteredCustomers = useMemo(() => {
@@ -173,7 +182,10 @@ const ClientesView: React.FC<ClientesViewProps> = ({
     return stats;
   }, [sortedCities, customersByCity]);
 
-  const handleCityCardClick = useCallback((city: string) => setViewingCity(city), []);
+  const handleOpenCityCustomers = useCallback((city: string) => {
+      setIsCityListModalOpen(false);
+      setViewingCity(city);
+  }, []);
 
   return (
     <>
@@ -185,7 +197,7 @@ const ClientesView: React.FC<ClientesViewProps> = ({
 
       <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 mb-8 flex flex-col gap-4">
         <div className="flex gap-2">
-            <TabButton label="Por Cidade" icon={<LocationMarkerIcon className="w-5 h-5"/>} active={viewMode === 'cidades'} onClick={() => setViewMode('cidades')} />
+            <TabButton label="Por Cidade" icon={<LocationMarkerIcon className="w-5 h-5"/>} active={viewMode === 'cidades'} onClick={() => { setViewMode('cidades'); setIsCityListModalOpen(true); }} />
             <TabButton label="Minhas Rotas" icon={<MapIcon className="w-5 h-5"/>} active={viewMode === 'rotas'} onClick={() => setViewMode('rotas')} />
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
@@ -219,7 +231,7 @@ const ClientesView: React.FC<ClientesViewProps> = ({
 
       {viewMode === 'cidades' ? (
         <div className="space-y-6">
-            {sortedCities.map((city, index) => {
+            {sortedCities.length > 0 ? sortedCities.map((city, index) => {
             const cityCustomers = customersByCity[city];
             const stats = cityStats[city];
             const isEven = index % 2 === 0;
@@ -227,16 +239,22 @@ const ClientesView: React.FC<ClientesViewProps> = ({
             const cardBorderColor = isEven ? 'border-lime-200 dark:border-lime-700' : 'border-cyan-200 dark:border-cyan-700';
             return (
                 <section key={city} className={`${cardBgColor} ${cardBorderColor} p-4 rounded-lg shadow-lg border`}>
-                    <div className="flex flex-wrap justify-between items-center gap-x-4 gap-y-2 mb-4"><h2 className="text-2xl font-bold text-red-600 dark:text-red-500 flex items-center gap-2"><LocationMarkerIcon className="w-6 h-6 text-slate-400" />{city} ({cityCustomers.length})</h2><div className="flex items-center gap-4"><div className="flex items-center gap-1.5 text-green-500" title="Clientes visitados nos últimos 25 dias"><GreenBilliardBallIcon className="w-4 h-4" /><span className="font-bold">{stats.visited}</span></div><div className="flex items-center gap-1.5 text-red-500" title="Clientes com visita pendente"><RedBilliardBallIcon className="w-4 h-4" /><span className="font-bold">{stats.notVisited}</span></div><button onClick={() => handleCityCardClick(city)} className="text-sm font-semibold text-lime-600 dark:text-lime-400 hover:underline">Ver Todos &rarr;</button></div></div>
+                    <div className="flex flex-wrap justify-between items-center gap-x-4 gap-y-2 mb-4"><h2 className="text-2xl font-bold text-red-600 dark:text-red-500 flex items-center gap-2"><LocationMarkerIcon className="w-6 h-6 text-slate-400" />{city} ({cityCustomers.length})</h2><div className="flex items-center gap-4"><div className="flex items-center gap-1.5 text-green-500" title="Clientes visitados nos últimos 25 dias"><GreenBilliardBallIcon className="w-4 h-4" /><span className="font-bold">{stats.visited}</span></div><div className="flex items-center gap-1.5 text-red-500" title="Clientes com visita pendente"><RedBilliardBallIcon className="w-4 h-4" /><span className="font-bold">{stats.notVisited}</span></div><button onClick={() => handleOpenCityCustomers(city)} className="text-sm font-semibold text-lime-600 dark:text-lime-400 hover:underline">Ver Todos &rarr;</button></div></div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">{cityCustomers.slice(0, 8).map(customer => (<CustomerCard key={customer.id} customer={customer} billings={billings} hasActiveWarning={warnings.some(w => w.customerId === customer.id && !w.isResolved)} onBill={onBillCustomer} onEdit={onEditCustomer} onDelete={onDeleteCustomer} onPayDebt={onPayDebtCustomer} onHistory={onHistoryCustomer} showNotification={showNotification} onFocusCustomer={setFocusedCustomer} onFichaActions={onFichaActions} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden} onUpdateCustomer={onUpdateCustomer} onWarningClick={handleWarningClick} />))}</div>
                 </section>
             );
-            })}
+            }) : (
+                 <div className="text-center py-16 px-6 bg-slate-100 dark:bg-slate-800/50 rounded-lg shadow-inner">
+                    <SearchIcon className="w-16 h-16 text-slate-400 dark:text-slate-500 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-slate-700 dark:text-slate-300">Nenhum Cliente Encontrado</h3>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2">Tente ajustar seus filtros de busca ou adicione um novo cliente.</p>
+                </div>
+            )}
         </div>
       ) : (
         <div className="space-y-6">
             <button onClick={onOpenRouteCreator} className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-500 transition-colors shadow-lg"><RulerIcon className="w-5 h-5" /><span>Criar Nova Rota</span></button>
-            {routes.map((route, index) => {
+            {routes.map((route) => {
                 const routeCustomers = route.customerIds.map(id => customers.find(c => c.id === id)).filter((c): c is Customer => !!c);
                 return(
                     <section key={route.id} className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700">
@@ -249,9 +267,18 @@ const ClientesView: React.FC<ClientesViewProps> = ({
         </div>
       )}
 
+      {/* Modals */}
+      <CityListModal 
+        isOpen={isCityListModalOpen} 
+        onClose={() => setIsCityListModalOpen(false)} 
+        cities={sortedCities} 
+        onSelectCity={handleOpenCityCustomers} 
+      />
+
       {viewingCity && (<CityCustomersModal city={viewingCity} customers={customersByCity[viewingCity] || []} warnings={warnings} billings={billings} onClose={() => setViewingCity(null)} onBillCustomer={onBillCustomer} onEditCustomer={onEditCustomer} onDeleteCustomer={onDeleteCustomer} onPayDebtCustomer={onPayDebtCustomer} onHistoryCustomer={onHistoryCustomer} showNotification={showNotification} onFocusCustomer={setFocusedCustomer} onFichaActions={onFichaActions} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden} onUpdateCustomer={onUpdateCustomer} onWarningClick={handleWarningClick} />)}
-      {focusedCustomer && <FullScreenCustomerView customer={focusedCustomer} onClose={() => setFocusedCustomer(null)} billings={billings} warnings={warnings} onBill={onBillCustomer} onEdit={onEditCustomer} onDelete={onDeleteCustomer} onPayDebt={onPayDebtCustomer} onHistory={onHistoryCustomer} showNotification={showNotification} onFichaActions={onFichaActions} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden} onUpdateCustomer={onUpdateCustomer} onWarningClick={handleWarningClick} />}
+      {focusedCustomer && <FullScreenCustomerView customer={focusedCustomer} onClose={() => setFocusedCustomer(null)} warnings={warnings} onWarningClick={handleWarningClick} />}
       <WarningDetailsModal isOpen={!!viewingWarning} onClose={() => setViewingWarning(null)} customer={viewingWarning?.customer || null} warning={viewingWarning?.warning || null} />
+      <HistoryModal isOpen={!!historyCustomer} onClose={() => setHistoryCustomer(null)} customer={historyCustomer} billings={billings} equipments={allEquipments} />
     </>
   );
 };

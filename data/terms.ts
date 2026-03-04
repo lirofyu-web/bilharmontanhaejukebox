@@ -1,1 +1,5 @@
 export const TERMOS_DE_LOCACAO = 'O LOCATÁRIO RECEBE NESTA DATA O EQUIPAMENTO ACIMA IDENTIFICADO COM TODOS OS EQUIPAMENTOS INTERNOS E EXTERNOS EM PERFEITO ESTADO DE USO E CONSERVAÇÃO. O VALOR DA LOCAÇÃO SERÁ APURADO MEDIANTE O USO DO RESPECTIVO EQUIPAMENTO, SENDO QUE O PAGAMENTO OCORRERÁ NO PRAZO E NOS PERCENTUAIS ACIMA MENCIONADOS.';
+
+export const CLAUSULAS_CONTRATUAIS = '1. O equipamento é cedido em regime de locação, permanecendo de propriedade da LOCADORA.\n2. O LOCATÁRIO é responsável pela conservação do equipamento, respondendo por danos causados por mau uso ou negligência.\n3. Fica proibida a remoção do equipamento do local de instalação sem autorização prévia da LOCADORA.\n4. O presente contrato tem prazo indeterminado, podendo ser rescindido por qualquer das partes com aviso prévio de 30 dias.\n5. A manutenção e o suporte técnico serão realizados exclusivamente pela equipe da LOCADORA.';
+
+export const TERMOS_RECIBO_SIMPLIFICADO = '1. O equipamento é cedido em perfeito estado.\n2. O valor da locação é apurado com base no uso e pago conforme os percentuais e prazos definidos.\n3. Danos por mau uso são de responsabilidade do locatário.';

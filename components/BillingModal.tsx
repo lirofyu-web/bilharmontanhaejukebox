@@ -127,11 +127,11 @@ const BillingModal: React.FC<BillingModalProps> = ({ isOpen, onClose, onConfirm,
   const calculation = useMemo(() => {
     let result: Partial<Billing> = {};
     const relogioAtual = safeParseFloat(formState.relogioAtual);
-    const relogioAnterior = equipment.relogioAnterior;
+    const relogioAnterior = equipment.relogioAnterior || 0;
 
     const isInvalidReading = relogioAtual < relogioAnterior;
     
-    const partidasJogadas = isInvalidReading ? 0 : Math.round(relogioAtual) - Math.round(relogioAnterior);
+    const partidasJogadas = isInvalidReading ? 0 : relogioAtual - relogioAnterior;
 
     if (equipment.type === 'mesa') {
       if (equipment.billingType === 'monthly') {
@@ -139,63 +139,96 @@ const BillingModal: React.FC<BillingModalProps> = ({ isOpen, onClose, onConfirm,
             valorTotal: equipment.monthlyFeeValue || 0,
             billingType: 'monthly',
             partidasJogadas: partidasJogadas,
-            relogioAnterior: equipment.relogioAnterior,
-            relogioAtual: Math.round(relogioAtual),
+            relogioAnterior: relogioAnterior,
+            relogioAtual: relogioAtual,
           };
-      } else {
+      } else { // 'perPlay'
         const descontoPartidas = safeParseFloat(formState.descontoPartidas);
         const partidasCobradas = Math.max(0, partidasJogadas - descontoPartidas);
         const valorFicha = equipment.valorFicha || 0;
         const valorBruto = partidasCobradas * valorFicha;
-        const parteFirma = Math.round((valorBruto * ((equipment.parteFirma || 0) / 100)) * 100) / 100;
-        const parteCliente = Number((valorBruto - parteFirma).toFixed(2));
-        result = { billingType: 'perPlay', partidasJogadas, descontoPartidas, partidasCobradas, valorTotal: parteFirma, parteFirma, parteCliente, valorFicha, valorBruto };
+        
+        let firmaPercent = 0;
+        if (typeof equipment.parteFirma === 'number') {
+            firmaPercent = equipment.parteFirma;
+        } else if (typeof equipment.parteCliente === 'number') {
+            firmaPercent = 100 - equipment.parteCliente;
+        }
+        firmaPercent = Math.max(0, Math.min(100, firmaPercent));
+
+        const parteFirma = valorBruto * (firmaPercent / 100);
+        const parteCliente = valorBruto - parteFirma;
+
+        result = { 
+            billingType: 'perPlay', 
+            partidasJogadas,
+            descontoPartidas, 
+            partidasCobradas, 
+            valorFicha, 
+            valorBruto: parseFloat(valorBruto.toFixed(2)),
+            parteFirma: parseFloat(parteFirma.toFixed(2)), 
+            parteCliente: parseFloat(parteCliente.toFixed(2)),
+            valorTotal: parseFloat(parteFirma.toFixed(2)),
+        };
       }
     } else if (equipment.type === 'jukebox') {
         const valorBruto = safeParseFloat(formState.totalArrecadadoJukebox);
-        const parteFirma = Math.round((valorBruto * ((equipment.porcentagemJukeboxFirma || 0) / 100)) * 100) / 100;
-        const parteCliente = Number((valorBruto - parteFirma).toFixed(2));
+
+        let firmaPercent = 0;
+        if (typeof equipment.porcentagemJukeboxFirma === 'number') {
+            firmaPercent = equipment.porcentagemJukeboxFirma;
+        } else if (typeof equipment.porcentagemJukeboxCliente === 'number') {
+            firmaPercent = 100 - equipment.porcentagemJukeboxCliente;
+        }
+        firmaPercent = Math.max(0, Math.min(100, firmaPercent));
+
+        const parteFirma = valorBruto * (firmaPercent / 100);
+        const parteCliente = valorBruto - parteFirma;
         
         const relogioAtualJukebox = safeParseFloat(formState.relogioAtual);
-        const partidasJogadasJukebox = (formState.relogioAtual !== '' && relogioAtualJukebox >= equipment.relogioAnterior) 
-                                ? Math.round(relogioAtualJukebox) - Math.round(equipment.relogioAnterior)
+        const partidasJogadasJukebox = (formState.relogioAtual !== '' && relogioAtualJukebox >= relogioAnterior) 
+                                ? relogioAtualJukebox - relogioAnterior
                                 : 0;
 
         result = { 
-            valorBruto,
-            parteFirma, 
-            parteCliente, 
-            valorTotal: parteFirma,
+            valorBruto: parseFloat(valorBruto.toFixed(2)),
+            parteFirma: parseFloat(parteFirma.toFixed(2)), 
+            parteCliente: parseFloat(parteCliente.toFixed(2)),
+            valorTotal: parseFloat(parteFirma.toFixed(2)),
             partidasJogadas: partidasJogadasJukebox
         };
     } else if (equipment.type === 'grua') {
-      const saldo = safeParseFloat(formState.saldo);
-      const recebimentoEspecie = safeParseFloat(formState.recebimentoEspecie);
-      const recebimentoPix = safeParseFloat(formState.recebimentoPix);
-      let aluguelValor = safeParseFloat(formState.aluguelValor);
+      const saldoBruto = isInvalidReading ? 0 : relogioAtual - relogioAnterior;
       
-      if(equipment.aluguelPercentual != null){
-          aluguelValor = Math.round((saldo * (equipment.aluguelPercentual / 100)) * 100) / 100;
+      let finalAluguelValor = safeParseFloat(formState.aluguelValor);
+      
+      if (equipment.aluguelPercentual != null && equipment.aluguelPercentual > 0) {
+          finalAluguelValor = saldoBruto * (equipment.aluguelPercentual / 100);
       }
       
-      const valorTotalFirma = saldo - aluguelValor;
+      const valorTotalFirma = saldoBruto - finalAluguelValor;
 
       result = { 
           partidasJogadas,
-          saldo,
-          aluguelValor,
-          valorTotal: valorTotalFirma,
-          recebimentoEspecie,
-          recebimentoPix,
-          sobraPelucia: Math.round(safeParseFloat(formState.sobraPelucia)),
-          reposicaoPelucia: Math.round(safeParseFloat(formState.reposicaoPelucia)),
-          quantidadePelucia: Math.round(safeParseFloat(formState.quantidadePelucia)),
+          saldo: parseFloat(saldoBruto.toFixed(2)),
+          aluguelPercentual: equipment.aluguelPercentual,
+          aluguelValor: parseFloat(finalAluguelValor.toFixed(2)),
+          valorTotal: parseFloat(valorTotalFirma.toFixed(2)),
+          recebimentoEspecie: safeParseFloat(formState.recebimentoEspecie),
+          recebimentoPix: safeParseFloat(formState.recebimentoPix),
+          sobraPelucia: safeParseFloat(formState.sobraPelucia),
+          reposicaoPelucia: safeParseFloat(formState.reposicaoPelucia),
+          quantidadePelucia: safeParseFloat(formState.quantidadePelucia),
       };
     }
     
-    if (result.partidasJogadas === undefined) {
-        result.partidasJogadas = partidasJogadas;
+    if (result.relogioAnterior === undefined) {
+        result.relogioAnterior = relogioAnterior;
     }
+    if (result.relogioAtual === undefined) {
+        result.relogioAtual = relogioAtual;
+    }
+
     return result;
   }, [formState, equipment]);
   
@@ -513,7 +546,7 @@ const BillingModal: React.FC<BillingModalProps> = ({ isOpen, onClose, onConfirm,
                 </div>
                 <hr className="border-dashed border-slate-600 my-2" />
                 <div className="flex justify-between text-slate-300">
-                    <span>Parte Cliente ({equipment.porcentagemJukeboxCliente}%):</span>
+                    <span>Parte Cliente ({100 - (equipment.porcentagemJukeboxFirma || 0)}%):</span>
                     <span className="font-mono">R$ {(calculation.parteCliente || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between font-bold text-lime-400">
@@ -609,7 +642,9 @@ const BillingModal: React.FC<BillingModalProps> = ({ isOpen, onClose, onConfirm,
     </div>
   );
 
-  const renderMesaStep1 = () => (
+  const renderMesaStep1 = () => {
+    const parteClientePercent = 100 - (equipment.parteFirma || 100);
+    return (
       <div className="space-y-4">
         <h4 className="text-md font-bold text-lime-400">Leitura Anterior: {equipment.relogioAnterior}</h4>
         <FormField label="Leitura Atual" name="relogioAtual" value={formState.relogioAtual} type="text" inputMode="numeric" equipmentId={equipment.id} isReadingInvalid={isReadingInvalid} onChange={(field, val) => handleFormChange(field, val)} autoFocus />
@@ -638,7 +673,7 @@ const BillingModal: React.FC<BillingModalProps> = ({ isOpen, onClose, onConfirm,
                             <span className="font-mono">{calculation.partidasCobradas || 0}</span>
                         </div>
                         <div className="flex justify-between text-slate-300">
-                            <span>Parte Cliente ({equipment.parteCliente}%):</span>
+                            <span>Parte Cliente ({parteClientePercent}%):</span>
                             <span className="font-mono">R$ {(calculation.parteCliente || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                         <div className="flex justify-between font-bold text-lime-400">
@@ -650,7 +685,7 @@ const BillingModal: React.FC<BillingModalProps> = ({ isOpen, onClose, onConfirm,
             </div>
         )}
       </div>
-  );
+  )};
 
   const renderMesaStep2 = () => (
     <div className="space-y-4 animate-fade-in">
