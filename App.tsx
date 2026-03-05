@@ -53,6 +53,7 @@ import FinalizePaymentModal from './components/FinalizePaymentModal';
 import PrivacyPinModal from './components/PrivacyPinModal';
 import PendingPaymentActionModal from './components/PendingPaymentActionModal';
 import RouteCreationModal from './components/RouteCreationModal';
+import PrintableCustomerSheetView from './components/PrintableCustomerSheetView';
 
 const viewTitles: Record<View, string> = {
     'DASHBOARD': 'Dashboard',
@@ -179,6 +180,7 @@ const App: React.FC = () => {
     const [forgiveDebtModalState, setForgiveDebtModalState] = useState<{ isOpen: boolean; customer: Customer | null; }>({ isOpen: false, customer: null });
     const [pendingPaymentActionModalState, setPendingPaymentActionModalState] = useState<{ isOpen: boolean; customer: Customer | null; pendingBilling: Billing | null; }>({ isOpen: false, customer: null, pendingBilling: null });
     const [isRouteCreationModalOpen, setIsRouteCreationModalOpen] = useState(false);
+    const [printableCustomerSheet, setPrintableCustomerSheet] = useState<Customer | null>(null);
         
     // Saving state for UI feedback
     const [isSaving, setIsSaving] = useState(false);
@@ -1447,6 +1449,10 @@ const App: React.FC = () => {
         await shareText(text, title);
     }, [shareText]);
 
+    const handleViewCustomerSheet = useCallback((customer: Customer) => {
+        setPrintableCustomerSheet(customer);
+    }, []);
+
     const handlePrintPdfReceipt = useCallback(async (receiptData: Billing | DebtPayment | { type: 'debt-statement', customer: Customer }) => {
         try {
             let title: string;
@@ -1575,6 +1581,7 @@ const App: React.FC = () => {
                     onClose={() => setFichaActionsModalState({ isOpen: false, customer: null })}
                     customer={fichaActionsModalState.customer}
                     onShare={handleShareCustomerData}
+                    onViewFicha={handleViewCustomerSheet}
                 />
             )}
             {isDeleteAllDataModalOpen && <ActionModal isOpen={isDeleteAllDataModalOpen} onClose={() => setIsDeleteAllDataModalOpen(false)} onConfirm={handleDeleteAllData} title="Apagar Todos os Dados" confirmText="Sim, Apagar Tudo"><p className="text-red-400">Esta ação é irreversível. Confirma que deseja apagar todos os dados da sua conta?</p></ActionModal>}
@@ -1600,6 +1607,7 @@ const App: React.FC = () => {
             )}
             {privacyPinModalState.isOpen && <PrivacyPinModal isOpen={privacyPinModalState.isOpen} mode={privacyPinModalState.mode} title={privacyPinModalState.title} error={privacyPinModalState.error} onConfirm={privacyPinModalState.onConfirm} onClose={() => setPrivacyPinModalState(prev => ({ ...prev, isOpen: false, error: '' }))} />}
             {isRouteCreationModalOpen && <RouteCreationModal isOpen={isRouteCreationModalOpen} onClose={() => setIsRouteCreationModalOpen(false)} customers={customers} onConfirm={handleSaveRoute} isSaving={isSaving} />}
+            {printableCustomerSheet && <PrintableCustomerSheetView customer={printableCustomerSheet} onCancel={() => setPrintableCustomerSheet(null)} showNotification={showNotification} />}
             
             {actionFeedbackState.isOpen && <ActionFeedbackOverlay isOpen={actionFeedbackState.isOpen} onEnd={handleAnimationEnd} variant={actionFeedbackState.variant} message={actionFeedbackState.message} />}
         </div>

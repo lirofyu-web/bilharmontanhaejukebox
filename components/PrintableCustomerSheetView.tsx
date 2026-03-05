@@ -38,7 +38,6 @@ const PrintableCustomerSheetView: React.FC<PrintableCustomerSheetViewProps> = ({
           <head>
             <title>Ficha de Cadastro - ${customer.name}</title>
             <style>
-              body { font-family: 'Courier New', Courier, monospace; }
               @media print {
                 body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 .no-print { display: none; }
@@ -66,15 +65,17 @@ const PrintableCustomerSheetView: React.FC<PrintableCustomerSheetViewProps> = ({
     setIsGenerating(true);
     showNotification('Gerando PDF, por favor aguarde...', 'success');
     
-    // Use o HTML já gerado, que será renderizado no DOM oculto para captura
     const container = document.createElement('div');
+    container.className = 'pdf-render-container';
     container.innerHTML = sheetHtml;
     document.body.appendChild(container);
 
     try {
       const fileName = `ficha-${customer.name.toLowerCase().replace(/\s+/g, '-')}.pdf`;
-      // O elemento a ser capturado é o primeiro filho do container
-      await exportElementAsPDF(container.firstChild as HTMLElement, fileName);
+      const elementToExport = container.querySelector('.sheet-container') as HTMLElement;
+      if (!elementToExport) throw new Error('Elemento da ficha não encontrado para exportação.');
+
+      await exportElementAsPDF(elementToExport, fileName);
     } catch (error) {
       console.error("PDF generation failed:", error);
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro desconhecido.';
@@ -104,21 +105,23 @@ const PrintableCustomerSheetView: React.FC<PrintableCustomerSheetViewProps> = ({
         </div>
       </header>
       
-      <div ref={printContentRef} className="a4-container-for-capture bg-white shadow-lg" dangerouslySetInnerHTML={{ __html: sheetHtml }} />
+      <div ref={printContentRef} className="a4-container-for-capture shadow-lg" dangerouslySetInnerHTML={{ __html: sheetHtml }} />
       
       <style>{`
         .a4-container-for-capture {
           width: 210mm;
-          min-height: 297mm;
           margin: 0 auto;
-          background: white;
           box-sizing: border-box;
+        }
+        .pdf-render-container {
+            position: absolute;
+            left: -9999px;
+            top: auto;
+            width: 210mm;
         }
         @media (max-width: 768px) {
             .a4-container-for-capture {
-              width: 95%;
-              min-height: 0;
-              height: auto; 
+              width: 100%;
               margin-bottom: 2vh;
             }
         }

@@ -1,6 +1,6 @@
-// utils/receiptGenerator.ts
+
 import { Billing, DebtPayment, Equipment, Customer } from '../types';
-import { TERMOS_RECIBO_SIMPLIFICADO } from '../data/terms';
+import { TERMS_CLAUSES } from '../data/terms';
 
 const formatCurrency = (value: number | undefined) => (value || 0).toFixed(2);
 const formatCurrencyFicha = (value: number | undefined) => (value || 0).toFixed(2); // Use 2 for consistency on text receipts
@@ -164,6 +164,8 @@ ${qrData}
   `.trim().replace(/^\s+/gm, '');
 }
 
+const simplifiedTermsForShare = TERMS_CLAUSES.map(term => `- ${term.content}`).join('\n');
+
 export function generateCustomerShareText(customer: Customer): string {
   let text = `*MONTANHA BILHAR E JUKEBOX*\nCNPJ: 76.089.440/0001-29 | Jaguapitã - PR | (43) 99958-1993\n*DIVERSÃO LEVADO A SÉRIO*\n\n`;
   text += `*Dados do Cliente*\n\n`;
@@ -184,8 +186,8 @@ export function generateCustomerShareText(customer: Customer): string {
   }
 
   text += `\n--------------------------------\n`;
-  text += `*TERMOS DE LOCAÇÃO:*\n\n`;
-  text += TERMOS_RECIBO_SIMPLIFICADO.replace(/\n/g, '\n');
+  text += `*TERMOS DE LOCAÇÃO (Simplificado):*\n\n`;
+  text += simplifiedTermsForShare;
 
   return text.trim();
 }

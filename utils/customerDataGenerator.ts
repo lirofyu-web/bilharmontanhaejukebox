@@ -1,5 +1,6 @@
+
 import { Customer, Equipment } from '../types';
-import { CLAUSULAS_CONTRATUAIS, TERMOS_DE_LOCACAO } from '../data/terms';
+import { TERMS_CLAUSES } from '../data/terms';
 
 const formatEquipment = (equip: Equipment): string => {
     const details: string[] = [];
@@ -35,17 +36,17 @@ const formatEquipment = (equip: Equipment): string => {
 export const generateCustomerDataText = (customer: Customer): string => {
     const separator = '--------------------------------\n';
 
-    // LOCADORA Section
+    // Cabeçalho
     let text = `*CONTRATO DE LOCAÇÃO DE EQUIPAMENTOS*\n`;
     text += separator;
     text += `*LOCADORA:*\n`;
-    text += `BILHAR MONTANHA\n`;
+    text += `MONTANHA BILHAR E JUKEBOX\n`;
     text += `CNPJ: 76.089.440/0001-29\n`;
     text += `Telefone: (43) 99958-1993\n`;
     text += `Endereço: Rua Pernambuco, 260 - Centro, Jaguapitã - PR\n`;
     text += separator;
 
-    // LOCATÁRIO Section
+    // Cliente
     text += `*LOCATÁRIO:*\n`;
     text += `*Nome:* ${customer.name}\n`;
     if (customer.telefone) text += `*Telefone:* ${customer.telefone}\n`;
@@ -54,24 +55,23 @@ export const generateCustomerDataText = (customer: Customer): string => {
     if (customer.pontoReferencia) text += `*Ponto de Ref.:* ${customer.pontoReferencia}\n`;
     text += separator;
 
-    // EQUIPAMENTOS Section
+    // Equipamentos
     if (customer.equipment && customer.equipment.length > 0) {
         text += `*EQUIPAMENTO(S) LOCADO(S):*\n`;
         text += customer.equipment.map(formatEquipment).join('\n\n') + '\n';
         text += separator;
     }
 
-    // TERMOS DE LOCAÇÃO Section
-    text += `*TERMOS DE LOCAÇÃO:*\n`;
-    text += `${TERMOS_DE_LOCACAO}\n`;
+    // Termos e Cláusulas
+    const termsAndClausesText = TERMS_CLAUSES.map(
+        term => `*${term.title}:* ${term.content}`
+    ).join('\n\n');
+
+    text += `*TERMOS E CLÁUSULAS CONTRATUAIS:*\n`;
+    text += `${termsAndClausesText}\n`;
     text += separator;
 
-    // CLÁUSULAS Section
-    text += `*CLÁUSULAS CONTRATUAIS:*\n`;
-    text += `${CLAUSULAS_CONTRATUAIS}\n`;
-    text += separator;
-
-    // DATA Section
+    // Data
     const contractDate = customer.createdAt ? new Date(customer.createdAt).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '[Data não disponível]';
     text += `Jaguapitã, ${contractDate}\n`;
 
