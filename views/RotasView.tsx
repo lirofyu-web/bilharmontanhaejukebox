@@ -1,18 +1,12 @@
+
 // views/RotasView.tsx
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import ReactDOMServer from 'react-dom/server';
 import { Customer } from '../types';
 import PageHeader from '../components/PageHeader';
 import MapComponent from '../components/MapComponent';
-import { PrinterIcon } from '../components/icons/PrinterIcon';
-import { RulerIcon } from '../components/icons/RulerIcon';
-import { LocationMarkerIcon } from '../components/icons/LocationMarkerIcon';
-import { BilliardIcon } from '../components/icons/BilliardIcon';
-import { JukeboxIcon } from '../components/icons/JukeboxIcon';
-import { CraneIcon } from '../components/icons/CraneIcon';
-import { ListBulletIcon } from '../components/icons/ListBulletIcon';
-import { XIcon } from '../components/icons/XIcon';
-import { ArrowsPointingOutIcon } from '../components/icons/ArrowsPointingOutIcon';
-import { ArrowsPointingInIcon } from '../components/icons/ArrowsPointingInIcon';
+import ThermalRouteSheet from '../components/ThermalRouteSheet'; // Import the new component
+import { PrinterIcon, DocumentTextIcon, RulerIcon, LocationMarkerIcon, BilliardIcon, JukeboxIcon, CraneIcon, ListBulletIcon, XIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon } from '../components/icons';
 import { optimizeRoute } from '../utils/routeOptimizer';
 
 
@@ -265,6 +259,39 @@ const RotasView: React.FC<RotasViewProps> = ({ customers }) => {
         printWindow.print();
     }
   }, [displayedCustomers]);
+  
+  const handleThermalPrint = useCallback(() => {
+    const thermalComponent = <ThermalRouteSheet customers={displayedCustomers} isOptimized={!!optimizedRoute} />;
+    const htmlString = ReactDOMServer.renderToString(thermalComponent);
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Rota de Cobrança (Térmica)</title>
+                    <script src="https://cdn.tailwindcss.com"></script>
+                    <style>
+                         body { margin: 0; background-color: #808080; }
+                        .thermal-sheet { margin: 0 auto; }
+                        @page { size: 80mm auto; margin: 0; }
+                        @media print {
+                            body { background-color: #fff; }
+                        }
+                    </style>
+                </head>
+                <body><div class="thermal-sheet">${htmlString}</div></body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+        }, 200);
+    } else {
+        alert("Por favor, habilite pop-ups para impressão.");
+    }
+}, [displayedCustomers, optimizedRoute]);
 
   return (
     <div className="h-full flex flex-col relative">
@@ -335,7 +362,7 @@ const RotasView: React.FC<RotasViewProps> = ({ customers }) => {
           `}>
           <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center flex-shrink-0">
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Clientes ({displayedCustomers.length})</h3>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
                <button onClick={handleOptimizeRoute} title="Otimizar Rota" disabled={isProcessingRoute} className="p-2 text-slate-500 dark:text-slate-400 hover:text-lime-500 dark:hover:text-lime-400 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:cursor-wait">
                  {isProcessingRoute ? <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> : <RulerIcon className="w-5 h-5"/>}
                </button>
@@ -344,8 +371,12 @@ const RotasView: React.FC<RotasViewProps> = ({ customers }) => {
                     <XIcon className="w-5 h-5" />
                  </button>
                )}
-               <button onClick={handlePrintRoute} title="Imprimir Rota" className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                <div className="h-6 border-l border-slate-300 dark:border-slate-600 mx-1"></div>
+               <button onClick={handlePrintRoute} title="Imprimir Rota (A4)" className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
                  <PrinterIcon className="w-5 h-5"/>
+               </button>
+               <button onClick={handleThermalPrint} title="Imprimir Rota (Térmica)" className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                 <DocumentTextIcon className="w-5 h-5"/>
                </button>
             </div>
           </div>

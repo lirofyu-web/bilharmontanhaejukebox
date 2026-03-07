@@ -1,5 +1,7 @@
+
 // views/RelatoriosView.tsx
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import ReactDOMServer from 'react-dom/server';
 import { Billing, Customer, DebtPayment, Expense, Equipment } from '../types';
 import PageHeader from '../components/PageHeader';
 import CraneReportModal from '../components/CraneReportModal';
@@ -9,10 +11,11 @@ import { CraneIcon } from '../components/icons/CraneIcon';
 import { CurrencyDollarIcon } from '../components/icons/CurrencyDollarIcon';
 import { CalculatorIcon } from '../components/icons/CalculatorIcon';
 import PrintableSlipsModal from '../components/PrintableSlipsModal';
-import { DocumentDuplicateIcon } from '../components/icons/DocumentDuplicateIcon';
+import { DocumentDuplicateIcon, PrinterIcon } from '../components/icons';
 import CustomerSelectionForSlipsModal from '../components/CustomerSelectionForSlipsModal';
 import { safeParseFloat } from '../utils';
 import { CreditCardIcon } from '../components/icons/CreditCardIcon';
+import ThermalReportSheet, { ReportColumn } from '../components/ThermalReportSheet';
 
 interface RelatoriosViewProps {
   customers: Customer[];
@@ -29,7 +32,9 @@ const JukeboxReportModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (deposit: number) => void;
-}> = ({ isOpen, onClose, onConfirm }) => {
+  onConfirmThermal: (deposit: number) => void; // New prop for thermal print
+  isThermalSupported: boolean;
+}> = ({ isOpen, onClose, onConfirm, onConfirmThermal, isThermalSupported }) => {
   const [deposit, setDeposit] = useState('');
 
   useEffect(() => {
@@ -38,17 +43,21 @@ const JukeboxReportModal: React.FC<{
     }
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent, isThermal: boolean) => {
     e.preventDefault();
     const depositNum = safeParseFloat(deposit);
-    onConfirm(depositNum);
+    if (isThermal) {
+      onConfirmThermal(depositNum);
+    } else {
+      onConfirm(depositNum);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md border border-slate-700 animate-fade-in-up">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md border border-slate-700 animate-fade-in-up my-auto">
         <div className="p-6 border-b border-slate-700">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <DocumentDuplicateIcon className="w-6 h-6 text-fuchsia-400" />
@@ -56,7 +65,7 @@ const JukeboxReportModal: React.FC<{
           </h2>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1">Valor em Depósito (R$)</label>
             <input 
@@ -70,7 +79,7 @@ const JukeboxReportModal: React.FC<{
              <p className="text-xs text-slate-400 mt-1">Este valor é apenas informativo e não afeta o cálculo do lucro.</p>
           </div>
 
-          <div className="pt-4 flex justify-end gap-4">
+          <div className="pt-4 flex flex-wrap justify-end gap-4">
             <button 
               type="button" 
               onClick={onClose}
@@ -80,11 +89,22 @@ const JukeboxReportModal: React.FC<{
             </button>
             <button 
               type="submit"
+              onClick={(e) => handleSubmit(e, false)}
               className="bg-fuchsia-600 text-white font-bold py-2 px-4 rounded-md hover:bg-fuchsia-500 flex items-center gap-2"
             >
-              <DocumentDuplicateIcon className="w-5 h-5" />
-              Gerar Relatório
+              <PrinterIcon className="w-5 h-5" />
+              Gerar A4
             </button>
+             {isThermalSupported && (
+                <button 
+                  type="submit"
+                  onClick={(e) => handleSubmit(e, true)}
+                  className="bg-teal-600 text-white font-bold py-2 px-4 rounded-md hover:bg-teal-500 flex items-center gap-2"
+                >
+                    <DocumentDuplicateIcon className="w-5 h-5" />
+                    Gerar Térmico
+                </button>
+            )}
           </div>
         </form>
       </div>
@@ -100,7 +120,9 @@ const MesaReportModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (deposit: number) => void;
-}> = ({ isOpen, onClose, onConfirm }) => {
+  onConfirmThermal: (deposit: number) => void; // New prop for thermal print
+  isThermalSupported: boolean;
+}> = ({ isOpen, onClose, onConfirm, onConfirmThermal, isThermalSupported }) => {
   const [deposit, setDeposit] = useState('');
 
   useEffect(() => {
@@ -109,17 +131,22 @@ const MesaReportModal: React.FC<{
     }
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = (e: React.FormEvent, isThermal: boolean) => {
     e.preventDefault();
     const depositNum = safeParseFloat(deposit);
-    onConfirm(depositNum);
+    if (isThermal) {
+      onConfirmThermal(depositNum);
+    } else {
+      onConfirm(depositNum);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md border border-slate-700 animate-fade-in-up">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md border border-slate-700 animate-fade-in-up my-auto">
         <div className="p-6 border-b border-slate-700">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <DocumentDuplicateIcon className="w-6 h-6 text-cyan-400" />
@@ -127,7 +154,7 @@ const MesaReportModal: React.FC<{
           </h2>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1">Valor em Depósito (R$)</label>
             <input 
@@ -141,7 +168,7 @@ const MesaReportModal: React.FC<{
              <p className="text-xs text-slate-400 mt-1">Este valor é apenas informativo e não afeta o cálculo do lucro.</p>
           </div>
 
-          <div className="pt-4 flex justify-end gap-4">
+          <div className="pt-4 flex flex-wrap justify-end gap-4">
             <button 
               type="button" 
               onClick={onClose}
@@ -151,11 +178,22 @@ const MesaReportModal: React.FC<{
             </button>
             <button 
               type="submit"
+               onClick={(e) => handleSubmit(e, false)}
               className="bg-cyan-600 text-white font-bold py-2 px-4 rounded-md hover:bg-cyan-500 flex items-center gap-2"
             >
-              <DocumentDuplicateIcon className="w-5 h-5" />
-              Gerar Relatório
+              <PrinterIcon className="w-5 h-5" />
+              Gerar A4
             </button>
+             {isThermalSupported && (
+                <button 
+                  type="submit"
+                  onClick={(e) => handleSubmit(e, true)}
+                  className="bg-teal-600 text-white font-bold py-2 px-4 rounded-md hover:bg-teal-500 flex items-center gap-2"
+                >
+                    <DocumentDuplicateIcon className="w-5 h-5" />
+                    Gerar Térmico
+                </button>
+            )}
           </div>
         </form>
       </div>
@@ -338,6 +376,67 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
         printWindow.print();
     }
   }, [dateRange]);
+  
+  const printThermalReport = useCallback((title: string, columns: ReportColumn[], data: any[], summary?: { label: string; value: string | number }[]) => {
+    if (areValuesHidden) {
+        showNotification("Desative o Modo de Privacidade para imprimir relatórios.", "error");
+        return;
+    }
+
+    const thermalComponent = <ThermalReportSheet title={title} columns={columns} data={data} summary={summary} />;
+    const htmlString = ReactDOMServer.renderToString(thermalComponent);
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>${title}</title>
+                    <script src="https://cdn.tailwindcss.com"></script>
+                    <style>
+                        body {
+                            margin: 0;
+                            background-color: #808080; /* Cinza para o fundo fora da área de impressão */
+                            display: flex;
+                            justify-content: center;
+                            align-items: flex-start;
+                            min-height: 100vh;
+                            padding: 20px 0;
+                        }
+                        .print-container {
+                            max-width: 100%;
+                            overflow-x: auto; /* Permite rolagem horizontal se necessário */
+                        }
+                        @page {
+                            size: 80mm auto; /* Tamanho da página para impressão térmica */
+                            margin: 0;
+                        }
+                        @media print {
+                            body {
+                                background-color: #fff; /* Fundo branco ao imprimir */
+                                justify-content: flex-start;
+                                padding: 0;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-container">
+                        <div class="thermal-sheet">${htmlString}</div>
+                    </div>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+        }, 500); // Aumentado para garantir a renderização
+    } else {
+        alert("Por favor, habilite pop-ups para impressão.");
+    }
+}, [areValuesHidden, showNotification]);
+
 
   const handlePrintMesaReport = useCallback((deposito: number) => {
     if (areValuesHidden) {
@@ -422,6 +521,34 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
     printReport('Relatório de Mesas de Sinuca', content);
     setIsMesaReportModalOpen(false);
   }, [stats, printReport, customers, areValuesHidden, showNotification]);
+  
+    const handlePrintMesaReportThermal = useCallback((deposito: number) => {
+    const revenueMesaTotal = stats.revenueMesaDinheiro + stats.revenueMesaPix;
+    const lucroLiquido = revenueMesaTotal - stats.periodExpensesMesa;
+
+    const columns: ReportColumn[] = [
+      { header: 'Cliente', accessor: 'customerName', className: 'text-left' },
+      { header: 'Jogadas', accessor: 'partidasJogadas', className: 'text-right' },
+      { header: 'Receita', accessor: 'revenue', className: 'text-right', render: (val) => `R$ ${val.toFixed(2)}` },
+    ];
+
+    const data = [...stats.periodMesaBillings]
+      .sort((a, b) => new Date(b.settledAt).getTime() - new Date(a.settledAt).getTime())
+      .map(b => ({ ...b, revenue: (b.valorPagoDinheiro || 0) + (b.valorPagoPix || 0) }));
+
+    const summary = [
+      { label: 'Total Dinheiro', value: `R$ ${stats.revenueMesaDinheiro.toFixed(2)}` },
+      { label: 'Total PIX', value: `R$ ${stats.revenueMesaPix.toFixed(2)}` },
+      { label: 'Total Arrecadado', value: `R$ ${revenueMesaTotal.toFixed(2)}` },
+      { label: '(-) Despesas', value: `- R$ ${stats.periodExpensesMesa.toFixed(2)}` },
+      { label: '(=) Lucro Líquido', value: `R$ ${lucroLiquido.toFixed(2)}` },
+      { label: 'Depósito (Info)', value: `R$ ${deposito.toFixed(2)}` },
+    ];
+
+    printThermalReport('Relatório de Mesas de Sinuca', columns, data, summary);
+    setIsMesaReportModalOpen(false);
+  }, [stats, printThermalReport]);
+
 
   const handlePrintJukeboxReport = useCallback((deposito: number) => {
     if (areValuesHidden) {
@@ -503,6 +630,33 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
     printReport('Relatório de Jukebox', content);
     setIsJukeboxReportModalOpen(false);
   }, [stats, printReport, customers, areValuesHidden, showNotification]);
+  
+    const handlePrintJukeboxReportThermal = useCallback((deposito: number) => {
+    const revenueJukeboxTotal = stats.revenueJukeboxDinheiro + stats.revenueJukeboxPix;
+    const lucroLiquido = revenueJukeboxTotal - stats.periodExpensesJukebox;
+
+    const columns: ReportColumn[] = [
+      { header: 'Cliente', accessor: 'customerName', className: 'text-left' },
+      { header: 'Receita', accessor: 'revenue', className: 'text-right', render: (val) => `R$ ${val.toFixed(2)}` },
+    ];
+
+    const data = [...stats.periodJukeboxBillings]
+      .sort((a, b) => new Date(b.settledAt).getTime() - new Date(a.settledAt).getTime())
+      .map(b => ({ ...b, revenue: (b.valorPagoDinheiro || 0) + (b.valorPagoPix || 0) }));
+
+    const summary = [
+      { label: 'Total Dinheiro', value: `R$ ${stats.revenueJukeboxDinheiro.toFixed(2)}` },
+      { label: 'Total PIX', value: `R$ ${stats.revenueJukeboxPix.toFixed(2)}` },
+      { label: 'Total Arrecadado', value: `R$ ${revenueJukeboxTotal.toFixed(2)}` },
+      { label: '(-) Despesas', value: `- R$ ${stats.periodExpensesJukebox.toFixed(2)}` },
+      { label: '(=) Lucro Líquido', value: `R$ ${lucroLiquido.toFixed(2)}` },
+      { label: 'Depósito (Info)', value: `R$ ${deposito.toFixed(2)}` },
+    ];
+
+    printThermalReport('Relatório de Jukebox', columns, data, summary);
+    setIsJukeboxReportModalOpen(false);
+  }, [stats, printThermalReport]);
+
   
   const handleGenerateCraneReport = useCallback((startDate: string, endDate: string, moneyDeposit: number) => {
     if (areValuesHidden) {
@@ -613,6 +767,41 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
     printReport('Relatório de Gruas de Pelúcia', content, dateTitle);
     setIsCraneReportModalOpen(false);
   }, [expenses, billings, printReport, customers, areValuesHidden, showNotification]);
+  
+    const handleGenerateCraneReportThermal = useCallback((startDate: string, endDate: string, moneyDeposit: number) => {
+    const start = new Date(startDate + 'T00:00:00');
+    const end = new Date(endDate + 'T23:59:59');
+    
+    const reportExpenses = expenses
+      .filter(e => e.category === 'grua' && new Date(e.date) >= start && new Date(e.date) <= end)
+      .reduce((sum, e) => sum + e.amount, 0);
+
+    const data = billings
+      .filter(b => b.equipmentType === 'grua' && new Date(b.settledAt) >= start && new Date(b.settledAt) <= end)
+      .sort((a, b) => new Date(b.settledAt).getTime() - new Date(a.settledAt).getTime());
+
+    const totalValorFirma = data.reduce((sum, b) => sum + b.valorTotal, 0);
+    const totalEspecie = data.reduce((sum, b) => sum + (b.recebimentoEspecie || 0), 0);
+    const totalPix = data.reduce((sum, b) => sum + (b.recebimentoPix || 0), 0);
+    const saldoFinal = totalValorFirma - reportExpenses;
+
+    const columns: ReportColumn[] = [
+      { header: 'Cliente', accessor: 'customerName', className: 'text-left w-2/5' },
+      { header: 'Bruto', accessor: 'saldo', className: 'text-right', render: (val) => `R$${(val || 0).toFixed(2)}` },
+      { header: 'Firma', accessor: 'valorTotal', className: 'text-right', render: (val) => `R$${val.toFixed(2)}` },
+    ];
+
+    const summary = [
+      { label: 'Total Arrecadado', value: `R$ ${totalValorFirma.toFixed(2)}` },
+      { label: '(-) Despesas', value: `- R$ ${reportExpenses.toFixed(2)}` },
+      { label: '(=) Saldo Final', value: `R$ ${saldoFinal.toFixed(2)}` },
+      { label: 'Depósito (Info)', value: `R$ ${moneyDeposit.toFixed(2)}` },
+    ];
+
+    printThermalReport('Relatório de Gruas de Pelúcia', columns, data, summary);
+    setIsCraneReportModalOpen(false);
+  }, [expenses, billings, printThermalReport]);
+
 
   const handlePrintDebtPaymentsReport = useCallback(() => {
     if (areValuesHidden) {
@@ -686,6 +875,24 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
     `;
     printReport('Relatório de Dívidas Recebidas', content);
   }, [stats.periodDebtPayments, stats.debtReceivedDinheiro, stats.debtReceivedPix, stats.totalDebtReceived, printReport, areValuesHidden, showNotification]);
+  
+    const handlePrintDebtPaymentsReportThermal = useCallback(() => {
+    const columns: ReportColumn[] = [
+      { header: 'Cliente', accessor: 'customerName', className: 'text-left w-3/5' },
+      { header: 'Total', accessor: 'amountPaid', className: 'text-right', render: (val) => `R$${val.toFixed(2)}` },
+    ];
+
+    const data = [...stats.periodDebtPayments].sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime());
+    
+    const summary = [
+      { label: 'Total Dinheiro', value: `R$ ${stats.debtReceivedDinheiro.toFixed(2)}` },
+      { label: 'Total PIX', value: `R$ ${stats.debtReceivedPix.toFixed(2)}` },
+      { label: 'Total Geral', value: `R$ ${stats.totalDebtReceived.toFixed(2)}` },
+    ];
+
+    printThermalReport('Relatório de Dívidas Recebidas', columns, data, summary);
+  }, [stats, printThermalReport]);
+
 
   const handleGenerateSlips = useCallback((selectedCustomers: Customer[]) => {
       if (areValuesHidden) {
@@ -768,6 +975,25 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
     `;
     printReport('Relatório de Despesas', content);
   }, [areValuesHidden, showNotification, stats.filteredPeriodExpenses, stats.totalFilteredExpenses, expenseCategory, printReport]);
+  
+    const handlePrintExpenseReportThermal = useCallback(() => {
+    const categoryLabel = expenseCategory === 'all' ? 'Geral' : expenseCategory === 'outra' ? 'Outras' : expenseCategory.charAt(0).toUpperCase() + expenseCategory.slice(1);
+
+    const columns: ReportColumn[] = [
+      { header: 'Data', accessor: 'date', render: (d) => new Date(d).toLocaleDateString('pt-BR') },
+      { header: 'Descrição', accessor: 'description', className: 'text-left w-3/5' },
+      { header: 'Valor', accessor: 'amount', className: 'text-right', render: (val) => `R$${val.toFixed(2)}` },
+    ];
+
+    const data = [...stats.filteredPeriodExpenses].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    const summary = [
+      { label: `Total Despesas (${categoryLabel})`, value: `R$ ${stats.totalFilteredExpenses.toFixed(2)}` },
+    ];
+
+    printThermalReport('Relatório de Despesas', columns, data, summary);
+  }, [stats, expenseCategory, printThermalReport]);
+
 
   return (
     <>
@@ -790,7 +1016,9 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
               <InfoRow label="(-) Despesas (Mesas)" value={areValuesHidden ? 'R$ •••,••' : `- R$ ${stats.periodExpensesMesa.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-600 dark:text-red-400" />
               <InfoRow label="(=) Lucro Líquido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${(stats.revenueMesaDinheiro + stats.revenueMesaPix - stats.periodExpensesMesa).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-green-500 dark:text-green-300 font-bold text-lg" />
             </dl>
-           <button onClick={() => setIsMesaReportModalOpen(true)} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Mesas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-cyan-600 text-white font-bold py-2 px-4 rounded-md hover:bg-cyan-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><DocumentDuplicateIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
+           <div className="mt-4 flex gap-2">
+                <button onClick={() => setIsMesaReportModalOpen(true)} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Mesas"} className="flex-1 inline-flex items-center justify-center gap-2 bg-cyan-600 text-white font-bold py-2 px-4 rounded-md hover:bg-cyan-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><PrinterIcon className="w-5 h-5"/> <span>Relatório</span></button>
+           </div>
         </InfoCard>
         
         <InfoCard title="Resumo: Jukebox" icon={<JukeboxIcon className="w-6 h-6 text-fuchsia-500" />}>
@@ -800,7 +1028,9 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
               <InfoRow label="(-) Despesas (Jukebox)" value={areValuesHidden ? 'R$ •••,••' : `- R$ ${stats.periodExpensesJukebox.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-600 dark:text-red-400" />
               <InfoRow label="(=) Lucro Líquido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${(stats.revenueJukeboxDinheiro + stats.revenueJukeboxPix - stats.periodExpensesJukebox).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-green-500 dark:text-green-300 font-bold text-lg" />
             </dl>
-           <button onClick={() => setIsJukeboxReportModalOpen(true)} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Jukebox"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-fuchsia-600 text-white font-bold py-2 px-4 rounded-md hover:bg-fuchsia-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><DocumentDuplicateIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
+            <div className="mt-4 flex gap-2">
+                <button onClick={() => setIsJukeboxReportModalOpen(true)} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Jukebox"} className="flex-1 inline-flex items-center justify-center gap-2 bg-fuchsia-600 text-white font-bold py-2 px-4 rounded-md hover:bg-fuchsia-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><PrinterIcon className="w-5 h-5"/> <span>Relatório</span></button>
+            </div>
         </InfoCard>
 
         <InfoCard title="Resumo: Gruas de Pelúcia" icon={<CraneIcon className="w-6 h-6 text-orange-500" />}>
@@ -811,7 +1041,9 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
               <InfoRow label="(-) Despesas (Gruas)" value={areValuesHidden ? 'R$ •••,••' : `- R$ ${stats.periodExpensesGrua.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-600 dark:text-red-400" />
               <InfoRow label="(=) Lucro Líquido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${(stats.revenueGruaFirma - stats.periodExpensesGrua).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-green-500 dark:text-green-300 font-bold text-lg" />
             </dl>
-          <button onClick={() => setIsCraneReportModalOpen(true)} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Gruas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-orange-600 text-white font-bold py-2 px-4 rounded-md hover:bg-orange-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><DocumentDuplicateIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
+          <div className="mt-4 flex gap-2">
+            <button onClick={() => setIsCraneReportModalOpen(true)} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Gruas"} className="flex-1 inline-flex items-center justify-center gap-2 bg-orange-600 text-white font-bold py-2 px-4 rounded-md hover:bg-orange-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><PrinterIcon className="w-5 h-5"/> <span>Relatório</span></button>
+          </div>
         </InfoCard>
         
         <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -821,7 +1053,10 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
                     <InfoRow label="Recebido (PIX)" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.debtReceivedPix.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-lime-600 dark:text-lime-400" />
                     <InfoRow label="(=) Total Recebido" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.totalDebtReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-emerald-500 dark:text-emerald-300 font-bold text-lg" />
                 </dl>
-                <button onClick={handlePrintDebtPaymentsReport} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Dívidas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold py-2 px-4 rounded-md hover:bg-emerald-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><DocumentDuplicateIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
+                <div className="mt-4 flex gap-2">
+                    <button onClick={handlePrintDebtPaymentsReport} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Dívidas (A4)"} className="flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold py-2 px-4 rounded-md hover:bg-emerald-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><PrinterIcon className="w-5 h-5"/> <span>A4</span></button>
+                    <button onClick={handlePrintDebtPaymentsReportThermal} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Dívidas (Térmico)"} className="flex-1 inline-flex items-center justify-center gap-2 bg-teal-600 text-white font-bold py-2 px-4 rounded-md hover:bg-teal-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><DocumentDuplicateIcon className="w-5 h-5"/> <span>Térmico</span></button>
+                </div>
             </InfoCard>
 
             <InfoCard title="Resumo Geral de Despesas" icon={<CalculatorIcon className="w-6 h-6 text-red-500" />}>
@@ -844,7 +1079,10 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
                     <dl>
                         <InfoRow label="Total de Despesas" value={areValuesHidden ? 'R$ •••,••' : `R$ ${stats.totalFilteredExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} valueColor="text-red-500 dark:text-red-300 font-bold text-lg" />
                     </dl>
-                    <button onClick={handlePrintExpenseReport} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Despesas"} className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><DocumentDuplicateIcon className="w-5 h-5"/> <span>Imprimir Relatório</span></button>
+                    <div className="mt-4 flex gap-2">
+                        <button onClick={handlePrintExpenseReport} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Despesas (A4)"} className="flex-1 inline-flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><PrinterIcon className="w-5 h-5"/> <span>A4</span></button>
+                        <button onClick={handlePrintExpenseReportThermal} disabled={areValuesHidden} title={areValuesHidden ? "Desative o Modo de Privacidade para imprimir" : "Imprimir Relatório de Despesas (Térmico)"} className="flex-1 inline-flex items-center justify-center gap-2 bg-teal-600 text-white font-bold py-2 px-4 rounded-md hover:bg-teal-500 disabled:bg-slate-500 disabled:cursor-not-allowed"><DocumentDuplicateIcon className="w-5 h-5"/> <span>Térmico</span></button>
+                    </div>
                 </div>
             </InfoCard>
 
@@ -867,9 +1105,9 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
             </button>
        </div>
 
-      {isCraneReportModalOpen && <CraneReportModal isOpen={isCraneReportModalOpen} onClose={() => setIsCraneReportModalOpen(false)} onConfirm={handleGenerateCraneReport} />}
-      {isMesaReportModalOpen && <MesaReportModal isOpen={isMesaReportModalOpen} onClose={() => setIsMesaReportModalOpen(false)} onConfirm={handlePrintMesaReport} />}
-      {isJukeboxReportModalOpen && <JukeboxReportModal isOpen={isJukeboxReportModalOpen} onClose={() => setIsJukeboxReportModalOpen(false)} onConfirm={handlePrintJukeboxReport} />}
+      {isCraneReportModalOpen && <CraneReportModal isOpen={isCraneReportModalOpen} onClose={() => setIsCraneReportModalOpen(false)} onConfirm={handleGenerateCraneReport} onConfirmThermal={handleGenerateCraneReportThermal} isThermalSupported={true} />}
+      {isMesaReportModalOpen && <MesaReportModal isOpen={isMesaReportModalOpen} onClose={() => setIsMesaReportModalOpen(false)} onConfirm={handlePrintMesaReport} onConfirmThermal={handlePrintMesaReportThermal} isThermalSupported={true} />}
+      {isJukeboxReportModalOpen && <JukeboxReportModal isOpen={isJukeboxReportModalOpen} onClose={() => setIsJukeboxReportModalOpen(false)} onConfirm={handlePrintJukeboxReport} onConfirmThermal={handlePrintJukeboxReportThermal} isThermalSupported={true} />}
       {isCustomerSelectionOpen && <CustomerSelectionForSlipsModal isOpen={isCustomerSelectionOpen} onClose={() => setIsCustomerSelectionOpen(e => !e)} customers={customers} onConfirm={handleGenerateSlips} />}
       {slipsToPrint && <PrintableSlipsModal slips={slipsToPrint} onClose={() => setSlipsToPrint(null)} />}
     </>

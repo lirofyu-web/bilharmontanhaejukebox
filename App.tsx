@@ -181,7 +181,7 @@ const App: React.FC = () => {
     const [pendingPaymentActionModalState, setPendingPaymentActionModalState] = useState<{ isOpen: boolean; customer: Customer | null; pendingBilling: Billing | null; }>({ isOpen: false, customer: null, pendingBilling: null });
     const [isRouteCreationModalOpen, setIsRouteCreationModalOpen] = useState(false);
     const [printableCustomerSheet, setPrintableCustomerSheet] = useState<Customer | null>(null);
-        
+
     // Saving state for UI feedback
     const [isSaving, setIsSaving] = useState(false);
 
@@ -1450,6 +1450,7 @@ const App: React.FC = () => {
     }, [shareText]);
 
     const handleViewCustomerSheet = useCallback((customer: Customer) => {
+        setFichaActionsModalState({ isOpen: false, customer: null });
         setPrintableCustomerSheet(customer);
     }, []);
 
@@ -1608,7 +1609,6 @@ const App: React.FC = () => {
             {privacyPinModalState.isOpen && <PrivacyPinModal isOpen={privacyPinModalState.isOpen} mode={privacyPinModalState.mode} title={privacyPinModalState.title} error={privacyPinModalState.error} onConfirm={privacyPinModalState.onConfirm} onClose={() => setPrivacyPinModalState(prev => ({ ...prev, isOpen: false, error: '' }))} />}
             {isRouteCreationModalOpen && <RouteCreationModal isOpen={isRouteCreationModalOpen} onClose={() => setIsRouteCreationModalOpen(false)} customers={customers} onConfirm={handleSaveRoute} isSaving={isSaving} />}
             {printableCustomerSheet && <PrintableCustomerSheetView customer={printableCustomerSheet} onCancel={() => setPrintableCustomerSheet(null)} showNotification={showNotification} />}
-            
             {actionFeedbackState.isOpen && <ActionFeedbackOverlay isOpen={actionFeedbackState.isOpen} onEnd={handleAnimationEnd} variant={actionFeedbackState.variant} message={actionFeedbackState.message} />}
         </div>
     );

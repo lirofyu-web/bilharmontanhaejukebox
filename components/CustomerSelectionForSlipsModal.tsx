@@ -1,3 +1,4 @@
+
 // components/CustomerSelectionForSlipsModal.tsx
 import React, { useState, useMemo } from 'react';
 import { Customer } from '../types';
@@ -15,8 +16,8 @@ const CustomerSelectionForSlipsModal: React.FC<CustomerSelectionForSlipsModalPro
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredCustomers = useMemo(() => {
-    return customers.filter(c => 
-        c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    return customers.filter(c =>
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.cidade.toLowerCase().includes(searchQuery.toLowerCase())
     ).sort((a,b) => a.name.localeCompare(b.name));
   }, [customers, searchQuery]);
@@ -45,18 +46,22 @@ const CustomerSelectionForSlipsModal: React.FC<CustomerSelectionForSlipsModalPro
     const selectedCustomers = customers.filter(c => selectedIds.has(c.id));
     onConfirm(selectedCustomers);
   };
-  
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-lg border border-slate-700 animate-fade-in-up max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-slate-700">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true">
+      {/* Modal Panel */}
+      <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-lg border border-slate-700 animate-fade-in-up flex flex-col h-full max-h-[90vh]">
+        
+        {/* Modal Header */}
+        <div className="p-6 border-b border-slate-700 flex-shrink-0">
           <h2 className="text-xl font-bold text-white">Selecionar Clientes para Talões</h2>
           <p className="text-slate-400 mt-1">Selecione os clientes para gerar os talões de cobrança manual.</p>
         </div>
-        
-        <div className="p-4 flex-shrink-0">
+
+        {/* Search & Select All Bar */}
+        <div className="p-4 border-b border-slate-700 flex-shrink-0 space-y-4">
             <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <SearchIcon className="w-5 h-5 text-slate-400" />
@@ -69,26 +74,24 @@ const CustomerSelectionForSlipsModal: React.FC<CustomerSelectionForSlipsModalPro
                     className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 pl-10 pr-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime-500"
                 />
             </div>
-        </div>
-
-        <div className="px-6 py-2 border-b border-t border-slate-700 flex justify-between items-center">
             <div className="flex items-center">
                 <input
                     type="checkbox"
-                    id="select-all"
+                    id="select-all-slips"
                     checked={selectedIds.size === filteredCustomers.length && filteredCustomers.length > 0}
                     onChange={handleSelectAll}
                     className="h-4 w-4 rounded border-slate-500 text-lime-600 bg-slate-700 focus:ring-lime-500"
                 />
-                <label htmlFor="select-all" className="ml-2 text-sm font-medium text-slate-300">
+                <label htmlFor="select-all-slips" className="ml-2 text-sm font-medium text-slate-300">
                     Selecionar todos ({selectedIds.size}/{filteredCustomers.length})
                 </label>
             </div>
         </div>
 
+        {/* Customer List (Scrollable) */}
         <div className="overflow-y-auto flex-grow">
             <ul className="divide-y divide-slate-700">
-                {filteredCustomers.map(customer => (
+                {filteredCustomers.length > 0 ? filteredCustomers.map(customer => (
                     <li key={customer.id} onClick={() => handleToggle(customer.id)} className="flex items-center p-4 cursor-pointer hover:bg-slate-700/50">
                         <input
                             type="checkbox"
@@ -101,13 +104,16 @@ const CustomerSelectionForSlipsModal: React.FC<CustomerSelectionForSlipsModalPro
                             <p className="text-sm text-slate-400">{customer.cidade}</p>
                         </div>
                     </li>
-                ))}
+                )) : (
+                    <li className="text-center text-slate-400 p-8">Nenhum cliente encontrado.</li>
+                )}
             </ul>
         </div>
 
-        <div className="p-6 mt-auto bg-slate-800/50 rounded-b-lg flex justify-end gap-4 border-t border-slate-700">
+        {/* Modal Footer */}
+        <div className="p-6 bg-slate-800/50 rounded-b-lg flex flex-wrap justify-end gap-4 border-t border-slate-700 flex-shrink-0">
           <button onClick={onClose} className="bg-slate-600 text-white font-bold py-2 px-6 rounded-md hover:bg-slate-500">Cancelar</button>
-          <button 
+          <button
             onClick={handleConfirm}
             disabled={selectedIds.size === 0}
             className="bg-lime-600 text-white font-bold py-2 px-6 rounded-md hover:bg-lime-500 disabled:bg-slate-500 disabled:cursor-not-allowed"

@@ -1,16 +1,8 @@
 import React from 'react';
 import { User } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 import { View } from '../types';
-import { HomeIcon } from './icons/HomeIcon';
-import { UsersIcon } from './icons/UsersIcon';
-import { ReceiptIcon } from './icons/ReceiptIcon';
-import { CalculatorIcon } from './icons/CalculatorIcon';
-import { ChartBarIcon } from './icons/ChartBarIcon';
-import AppLogo from './AppLogo'; // Import the new AppLogo component
-import { MapIcon } from './icons/MapIcon';
-import { CogIcon } from './icons/CogIcon';
-import { BilliardIcon } from './icons/BilliardIcon';
-import { ArrowsPointingOutIcon } from './icons/ArrowsPointingOutIcon';
+import { HomeIcon, UsersIcon, ReceiptIcon, CalculatorIcon, ChartBarIcon, MapIcon, CogIcon, BilliardIcon, ArrowsPointingOutIcon } from './icons';
+import AppLogo from './AppLogo';
 
 interface SidebarProps {
   currentView: View;
@@ -38,12 +30,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
 
     const handleViewChange = (view: View) => {
         setView(view);
-        setIsOpen(false); // Close sidebar on navigation in mobile
+        setIsOpen(false);
     };
     
     const handleFastBillingClick = () => {
         onOpenFastBilling();
-        setIsOpen(false); // Close sidebar on action
+        setIsOpen(false);
     };
 
     const toggleFullScreen = () => {
@@ -79,20 +71,21 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
 
     return (
         <>
-            {/* Overlay for mobile */}
+            {/* Overlay for mobile - Z-index updated to 30 */}
             <div
                 onClick={() => setIsOpen(false)}
-                className={`fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden transition-opacity ${
+                className={`fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden transition-opacity ${
                     isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 }`}
             ></div>
 
-            <aside className={`fixed inset-y-0 left-0 w-64 bg-white dark:bg-slate-800 p-4 flex flex-col border-r border-slate-200 dark:border-slate-700 z-30 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 no-print ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            {/* Sidebar - Z-index updated to 40 */}
+            <aside className={`fixed inset-y-0 left-0 w-64 bg-white dark:bg-slate-800 p-4 flex flex-col border-r border-slate-200 dark:border-slate-700 z-40 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 no-print ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <div className="flex items-center justify-between mb-4">
                     <AppLogo />
                     <button 
                         onClick={toggleFullScreen}
-                        className="p-2 rounded-full text-red-500 hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        className="p-2 rounded-full text-slate-500 hover:bg-slate-500/10 focus:outline-none focus:ring-2 focus:ring-slate-500"
                         title="Tela Cheia"
                     >
                         <ArrowsPointingOutIcon className="w-6 h-6" />
@@ -119,7 +112,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
                         </ul>
                     </nav>
                     <div className="text-center text-xs text-slate-400 dark:text-slate-500 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                        <p>&copy; {new Date().getFullYear()} All rights reserved.</p>
+                         <p className="truncate">{user?.email}</p>
                     </div>
                 </div>
             </aside>

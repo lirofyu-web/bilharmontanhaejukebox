@@ -2,6 +2,8 @@
 import { Billing, DebtPayment, Equipment, Customer } from '../types';
 import { TERMS_CLAUSES } from '../data/terms';
 
+const COMPANY_DETAILS = "CNPJ: 76.089.440/0001-29 | Jaguapitã - PR | (43) 99958-1993";
+
 const formatCurrency = (value: number | undefined) => (value || 0).toFixed(2);
 const formatCurrencyFicha = (value: number | undefined) => (value || 0).toFixed(2); // Use 2 for consistency on text receipts
 const PIX_KEY = "43999581993";
@@ -99,29 +101,12 @@ Chave (Celular): ${PIX_KEY}
 *** COMPROVANTE PARA CONFERENCIA ***
 *** SEM VALOR FISCAL ***` : '';
 
-    return `*MONTANHA BILHAR & JUKEBOX*
-${isProvisional ? 'DEMONSTRATIVO DE COBRANÇA' : 'ACERTO DE CONTAS'}
---------------------------------
-CLIENTE: ${billing.customerName}
-DATA: ${new Date(billing.settledAt).toLocaleString('pt-BR')}
---------------------------------
-${details}
-${paymentDetails}
-${provisionalFooter}
-    `.replace(/\n\s+\n/g, '\n\n').trim();
+    return `*MONTANHA BILHAR & JUKEBOX*\n${COMPANY_DETAILS}\n${isProvisional ? 'DEMONSTRATIVO DE COBRANÇA' : 'ACERTO DE CONTAS'}\n--------------------------------\nCLIENTE: ${billing.customerName}\nDATA: ${new Date(billing.settledAt).toLocaleString('pt-BR')}\n--------------------------------\n${details}\n${paymentDetails}\n${provisionalFooter}\n    `.replace(/\n\s+\n/g, '\n\n').trim();
 }
 
 
 export function generateDebtText(debtPayment: DebtPayment): string {
-    return `*MONTANHA BILHAR & JUKEBOX*
-COMPROVANTE DE PAGAMENTO DE DIVIDA
---------------------------------
-CLIENTE: ${debtPayment.customerName}
-DATA: ${new Date(debtPayment.paidAt).toLocaleString('pt-BR')}
---------------------------------
-*VALOR PAGO: R$ ${formatCurrency(debtPayment.amountPaid)}*
-Pagamento: ${PAYMENT_METHOD_TEXT[debtPayment.paymentMethod as keyof typeof PAYMENT_METHOD_TEXT] || 'N/A'}
-    `.trim();
+    return `*MONTANHA BILHAR & JUKEBOX*\n${COMPANY_DETAILS}\nCOMPROVANTE DE PAGAMENTO DE DIVIDA\n--------------------------------\nCLIENTE: ${debtPayment.customerName}\nDATA: ${new Date(debtPayment.paidAt).toLocaleString('pt-BR')}\n--------------------------------\n*VALOR PAGO: R$ ${formatCurrency(debtPayment.amountPaid)}*\nPagamento: ${PAYMENT_METHOD_TEXT[debtPayment.paymentMethod as keyof typeof PAYMENT_METHOD_TEXT] || 'N/A'}\n    `.trim();
 }
 
 export function generateEquipmentLabelText(equipment: Equipment): string {
@@ -135,6 +120,7 @@ export function generateEquipmentLabelText(equipment: Equipment): string {
 ********************************
 *  MONTANHA BILHAR E JUKEBOX   *
 ********************************
+${COMPANY_DETAILS}
 
         EQUIPAMENTO
 
@@ -153,6 +139,7 @@ export function generateCustomerLabelText(customer: Customer): string {
 ********************************
 *  MONTANHA BILHAR E JUKEBOX   *
 ********************************
+${COMPANY_DETAILS}
 
       ETIQUETA DE CLIENTE
 

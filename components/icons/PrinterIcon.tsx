@@ -1,7 +1,10 @@
+
+// components/icons/PrinterIcon.tsx
 import React from 'react';
 
 export const PrinterIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6 18.25m.72-4.421c.24.03.48.062.72.096m0 0c-.24.03-.48.062-.72.096m0 0l.24.483m1.38-2.065a41.22 41.22 0 0 1-5.58 2.652l-2.192 1.146a.5.5 0 0 0-.246.635l.812 1.583c.196.383.62.623 1.05.528l4.435-1.077a41.32 41.32 0 0 1 5.58-2.652m0 0l2.192-1.146a.5.5 0 0 0 .246-.635l-.812-1.583a.5.5 0 0 0-1.05-.528l-4.435 1.077m0 0c.24.03.48.062.72.096" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.64.64-.64 1.671 0 2.311l3.182 3.182c.64.64 1.671.64 2.311 0l3.182-3.182c.64-.64.64-1.671 0-2.311h-8.674zM15.18 4.819A.75.75 0 0014.25 4.5H9.75a.75.75 0 00-.93.319l-2.25 3.75a.75.75 0 00.655 1.181h11.56a.75.75 0 00.655-1.181l-2.25-3.75zM3 10.5a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 15.75h18v3.75a1.5 1.5 0 01-1.5 1.5H4.5a1.5 1.5 0 01-1.5-1.5v-3.75z" />
   </svg>
 );
