@@ -351,7 +351,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ customers, initialData, onS
         </div>
 
         <div className={`flex justify-end gap-4 pt-4 border-t ${isEditMode ? 'border-slate-700 mt-6' : 'border-slate-200 dark:border-slate-700'}`}>
-          <button type="button" onClick={onCancel} className="bg-slate-500 text-white font-bold py-2 px-6 rounded-md hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-500">Cancelar</button>
+          <button type="button" onClick={onCancel} className="text-white font-bold py-2 px-6 rounded-md transition-colors animate-blink-cancel">Cancelar</button>
           <button type="submit" disabled={isSaving} className="bg-lime-500 text-white font-bold py-2 px-6 rounded-md hover:bg-lime-600 disabled:bg-slate-500 disabled:cursor-wait">{isSaving ? 'Salvando...' : submitButtonText}</button>
         </div>
       </form>

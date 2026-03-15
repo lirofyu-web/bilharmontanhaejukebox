@@ -59,6 +59,7 @@ export * from './ShareIcon';
 export * from './SparklesIcon';
 export * from './SpeakerWaveIcon';
 export * from './SpeakerXMarkIcon';
+export * from './StarIcon';
 export * from './SunIcon';
 export * from './TrashIcon';
 export * from './UserIcon';

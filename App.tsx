@@ -270,26 +270,34 @@ const App: React.FC = () => {
       };
     }, [currentView, showNotification]);
 
+    const handleUpdateUserProfile = useCallback(async (updates: Partial<UserProfile>) => {
+        if (!user) return;
+        const userDocRef = doc(db, "users", user.uid);
+        try {
+            await updateDoc(userDocRef, updates);
+            setUserProfile(prev => prev ? { ...prev, ...updates } : null);
+        } catch (error) {
+            console.error("Error updating user profile:", error);
+            throw error; 
+        }
+    }, [user]);
+
     // --- Privacy & Kiosk Mode Handlers ---
     const openPinModal = useCallback((mode: 'create' | 'enter', title: string, onConfirm: (pin: string) => void) => {
         setPrivacyPinModalState({ isOpen: true, mode, title, onConfirm, error: '' });
     }, []);
 
     const handleSetPin = useCallback(async (pin: string) => {
-        if (!user) return;
         const pinHash = btoa(pin);
-        const userDocRef = doc(db, "users", user.uid);
         try {
-            await updateDoc(userDocRef, { privacyPinHash: pinHash });
-            setUserProfile(prev => prev ? { ...prev, privacyPinHash: pinHash } : null);
+            await handleUpdateUserProfile({ privacyPinHash: pinHash });
             setIsPrivacyUnlocked(false);
             setPrivacyPinModalState({ isOpen: false, mode: 'create', title: '', onConfirm: () => {} });
             showNotification('Modo de privacidade ativado!', 'success');
         } catch (error) {
-            console.error("Error setting PIN:", error);
             showNotification('Erro ao salvar o PIN.', 'error');
         }
-    }, [user, showNotification]);
+    }, [handleUpdateUserProfile, showNotification]);
 
     const handleUnlock = useCallback((pin: string) => {
         const pinHash = btoa(pin);
@@ -303,25 +311,22 @@ const App: React.FC = () => {
     }, [userProfile, showNotification]);
 
     const handleRemovePin = useCallback(async (pin: string) => {
-        if (!user || !userProfile?.privacyPinHash) return;
+        if (!userProfile?.privacyPinHash) return;
         const pinHash = btoa(pin);
         if (userProfile.privacyPinHash !== pinHash) {
             setPrivacyPinModalState(prev => ({ ...prev, error: 'PIN incorreto.' }));
             return;
         }
         
-        const userDocRef = doc(db, "users", user.uid);
         try {
-            await updateDoc(userDocRef, { privacyPinHash: "" });
-            setUserProfile(prev => prev ? { ...prev, privacyPinHash: "" } : null);
+            await handleUpdateUserProfile({ privacyPinHash: "" });
             setIsPrivacyUnlocked(false);
             setPrivacyPinModalState({ isOpen: false, mode: 'enter', title: '', onConfirm: () => {} });
             showNotification('Modo de privacidade desativado.', 'success');
         } catch (error) {
-            console.error("Error removing PIN:", error);
             showNotification('Erro ao desativar o modo de privacidade.', 'error');
         }
-    }, [user, userProfile, showNotification]);
+    }, [userProfile, handleUpdateUserProfile, showNotification]);
 
     const handleToggleLock = useCallback(() => {
         if (isPrivacyUnlocked) {
@@ -463,9 +468,9 @@ const App: React.FC = () => {
                     if (profileDoc.exists()) {
                         setUserProfile(processFirestoreDoc(profileDoc) as UserProfile);
                     } else {
-                        const defaultProfileData = { email: user.email!, createdAt: Timestamp.now(), privacyPinHash: "" };
+                        const defaultProfileData = { email: user.email!, createdAt: Timestamp.now(), privacyPinHash: "", pixKeys: [] };
                         await setDoc(doc(db, "users", user.uid), defaultProfileData);
-                        setUserProfile({ id: user.uid, email: user.email!, createdAt: new Date(), privacyPinHash: "" });
+                        setUserProfile({ id: user.uid, email: user.email!, createdAt: new Date(), privacyPinHash: "", pixKeys: [] });
                     }
                 } catch (error) {
                     console.error("Error fetching user profile:", error);
@@ -1318,6 +1323,9 @@ const App: React.FC = () => {
             debtPayments,
             warnings,
             routes,
+            userProfile: {
+                pixKeys: userProfile?.pixKeys
+            }
         };
         const jsonString = JSON.stringify(dataToExport, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
@@ -1332,7 +1340,7 @@ const App: React.FC = () => {
         localStorage.setItem('lastBackupTimestamp', backupTimestamp);
         setLastBackupTimestamp(backupTimestamp);
         showNotification('Backup exportado com sucesso!', 'success');
-    }, [customers, billings, expenses, debtPayments, warnings, routes, showNotification]);
+    }, [customers, billings, expenses, debtPayments, warnings, routes, userProfile, showNotification]);
 
     const handleMergeData = useCallback(async (file: File) => {
         if (!user) {
@@ -1365,6 +1373,11 @@ const App: React.FC = () => {
                             batch.set(docRef, firestorePayload, { merge: true });
                         }
                     }
+                }
+                
+                if (data.userProfile?.pixKeys) {
+                    const userDocRef = doc(db, "users", user.uid);
+                    batch.update(userDocRef, { pixKeys: data.userProfile.pixKeys });
                 }
 
                 await batch.commit();
@@ -1403,6 +1416,9 @@ const App: React.FC = () => {
                     batch.delete(d.ref);
                 });
             }
+            
+            const userDocRef = doc(db, "users", user.uid);
+            batch.update(userDocRef, { pixKeys: [] });
     
             await batch.commit();
             await clearOfflineQueue();
@@ -1456,10 +1472,18 @@ const App: React.FC = () => {
 
     const handlePrintPdfReceipt = useCallback(async (receiptData: Billing | DebtPayment | { type: 'debt-statement', customer: Customer }) => {
         try {
+            const defaultPixKey = userProfile?.pixKeys?.find(k => k.isDefault);
+            const pixPayload = defaultPixKey?.key || "";
+            const pixKeyName = defaultPixKey?.name;
+
+            if (!pixPayload) {
+                showNotification('Nenhuma chave PIX padrão configurada. Vá para Configurações para adicionar uma.', 'error');
+                return;
+            }
+            
             let title: string;
             let SheetComponent: JSX.Element;
     
-            const pixPayload = "00020126360014BR.GOV.BCB.PIX0114+55439995819935204000053039865802BR5915BILHAR MONTANHA6012Jaguapita-PR62070503***6304F96E";
             const qrCodeDataUrl = await QRCode.toDataURL(pixPayload, {
                 width: 150,
                 margin: 1,
@@ -1469,15 +1493,15 @@ const App: React.FC = () => {
 
             if ('type' in receiptData && receiptData.type === 'debt-statement') {
                 title = `Demonstrativo - ${receiptData.customer.name}`;
-                SheetComponent = <DebtStatementSheet customer={receiptData.customer} qrCodeDataUrl={qrCodeDataUrl} />
+                SheetComponent = <DebtStatementSheet customer={receiptData.customer} qrCodeDataUrl={qrCodeDataUrl} pixKeyName={pixKeyName} />
             } else if ('equipmentType' in receiptData) {
                 const billing = receiptData as Billing;
                 title = `Comprovante - ${billing.customerName}`;
-                SheetComponent = <ReceiptSheet billing={billing} qrCodeDataUrl={qrCodeDataUrl} />;
+                SheetComponent = <ReceiptSheet billing={billing} qrCodeDataUrl={qrCodeDataUrl} pixKeyName={pixKeyName} />;
             } else {
                 const debtPayment = receiptData as DebtPayment;
                 title = `Pagamento - ${debtPayment.customerName}`;
-                SheetComponent = <DebtReceiptSheet debtPayment={debtPayment} qrCodeDataUrl={qrCodeDataUrl} />;
+                SheetComponent = <DebtReceiptSheet debtPayment={debtPayment} qrCodeDataUrl={qrCodeDataUrl} pixKeyName={pixKeyName} />;
             }
             
             const content = ReactDOMServer.renderToString(SheetComponent);
@@ -1495,7 +1519,7 @@ const App: React.FC = () => {
             console.error("Error generating PDF receipt:", error);
             showNotification('Falha ao gerar PDF para impressão.', 'error');
         }
-    }, [showNotification]);
+    }, [userProfile, showNotification]);
 
     const setView = useCallback((view: View) => {
         setCurrentView(view);
@@ -1526,7 +1550,7 @@ const App: React.FC = () => {
             case 'DESPESAS': return <DespesasView expenses={expenses} onAddExpense={handleAddExpense} onDeleteExpense={handleDeleteExpense} areValuesHidden={areValuesHidden} />;
             case 'ROTAS': return <RotasView customers={customers} />;
             case 'RELATORIOS': return <RelatoriosView customers={customers} billings={billings} expenses={expenses} debtPayments={debtPayments} areValuesHidden={areValuesHidden} showNotification={showNotification} />;
-            case 'CONFIGURACOES': return <ConfiguracoesView onExportData={handleExportData} onMergeData={handleMergeData} theme={theme} setTheme={setTheme} showNotification={showNotification} deferredPrompt={deferredPrompt} onInstallPrompt={handleInstallPrompt} onDeleteAllData={() => setIsDeleteAllDataModalOpen(true)} onLogout={handleLogout} onSwitchAccount={handleSwitchAccount} onAddNewAccount={handleAddNewAccount} isPrivacyModeEnabled={isPrivacyModeEnabled} onActivatePrivacyMode={handleActivatePrivacyMode} onDeactivatePrivacyMode={handleDeactivatePrivacyMode} />;
+            case 'CONFIGURACOES': return <ConfiguracoesView userProfile={userProfile} onUpdateUserProfile={handleUpdateUserProfile} onExportData={handleExportData} onMergeData={handleMergeData} theme={theme} setTheme={setTheme} showNotification={showNotification} deferredPrompt={deferredPrompt} onInstallPrompt={handleInstallPrompt} onDeleteAllData={() => setIsDeleteAllDataModalOpen(true)} onLogout={handleLogout} onSwitchAccount={handleSwitchAccount} onAddNewAccount={handleAddNewAccount} isPrivacyModeEnabled={isPrivacyModeEnabled} onActivatePrivacyMode={handleActivatePrivacyMode} onDeactivatePrivacyMode={handleDeactivatePrivacyMode} />;
             default: return <DashboardView billings={billings} expenses={expenses} customers={customers} debtPayments={debtPayments} warnings={warnings} onAddWarning={handleAddWarning} onResolveWarning={handleResolveWarning} onDeleteWarning={handleDeleteWarning} lastBackupDate={lastBackupTimestamp} onNavigateToSettings={() => setView('CONFIGURACOES')} areValuesHidden={areValuesHidden} deletedCustomersLog={deletedCustomersLog} />;
         }
     };

@@ -98,6 +98,13 @@ const EditCustomerModal: React.FC<EditCustomerModalProps> = ({ isOpen, onClose, 
       <style>{`
         @keyframes fade-in-up { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
         .animate-fade-in-up { animation: fade-in-up 0.3s ease-out forwards; }
+        @keyframes blink-cancel {
+          0%, 100% { background-color: #ef4444; } /* red-500 */
+          50% { background-color: #eab308; } /* yellow-500 */
+        }
+        .animate-blink-cancel {
+          animation: blink-cancel 0.5s step-end infinite;
+        }
       `}</style>
     </div>
   );

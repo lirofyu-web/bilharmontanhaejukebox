@@ -1,49 +1,52 @@
+
 // components/DebtStatementSheet.tsx
 import React from 'react';
 import { Customer } from '../types';
 
 interface DebtStatementSheetProps {
-    customer: Customer;
-    qrCodeDataUrl: string;
+  customer: Customer;
+  qrCodeDataUrl: string;
+  pixKeyName?: string;
 }
 
-const DebtStatementSheet: React.FC<DebtStatementSheetProps> = ({ customer, qrCodeDataUrl }) => {
-    const { name, debtAmount } = customer;
+const DebtStatementSheet: React.FC<DebtStatementSheetProps> = ({ customer, qrCodeDataUrl, pixKeyName }) => {
+
+    const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     return (
-        <div className="bg-white p-4 text-black font-sans">
-            <div className="text-center mb-4">
-                <h1 className="font-black text-2xl">MONTANHA BILHAR & JUKEBOX</h1>
-                <p className="text-sm">DEMONSTRATIVO DE DÍVIDA</p>
-                <p className="text-xs">{new Date().toLocaleString('pt-BR')}</p>
+        <div style={{ fontFamily: '\'Courier New\', Courier, monospace' }} className="text-base">
+            <div className="header text-center mb-4">
+                <h3 className="font-black text-xl">MONTANHA BILHAR & JUKEBOX</h3>
+                <p className="font-bold text-base">DEMONSTRATIVO DE DÍVIDA</p>
+                <p>--------------------------------</p>
+            </div>
+            
+            <div className="space-y-1">
+                <p>CLIENTE: {customer.name}</p>
+                <p>DATA: {new Date().toLocaleString('pt-BR')}</p>
+                <hr className="border-dashed border-black my-2" />
+                
+                <div className="flex justify-between font-bold text-xl pt-2 mt-2 border-t border-b border-dashed border-black py-2">
+                    <span>SALDO DEVEDOR:</span>
+                    <span>R$ {formatCurrency(customer.debtAmount)}</span>
+                </div>
             </div>
 
-            <div className="text-sm space-y-1 mb-4">
-                <p><span className="font-bold">CLIENTE:</span> {name}</p>
+            <div className="text-center mt-4">
+                <p className="font-bold text-sm">Para pagar sua dívida, utilize o QR Code abaixo ou a chave PIX.</p>
             </div>
+
+            {qrCodeDataUrl && (
+                <div className="text-center mt-4">
+                    <p className="font-bold">Pague com PIX</p>
+                    <img src={qrCodeDataUrl} alt="PIX QR Code" style={{ width: '150px', height: '150px', margin: '8px auto', border: '4px solid black' }} />
+                    <p className="text-xs">Chave: {pixKeyName || 'BILHAR MONTANHA'}</p>
+                </div>
+            )}
 
             <hr className="border-dashed border-black my-2" />
 
-            <div className="my-2 text-center">
-                <p>Este é um demonstrativo do valor total da dívida pendente. Para quitar o valor, utilize o QR Code PIX abaixo ou entre em contato.</p>
-            </div>
-
-            <hr className="border-dashed border-black my-2" />
-
-            <div className="flex justify-between items-center text-xl font-bold my-2 py-1 border-t border-b border-dashed border-black">
-                <span>VALOR DA DÍVIDA:</span>
-                <span>R$ {debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-            </div>
-            
-            <div className="text-center my-4">
-                <p className="font-bold text-lg">PAGUE COM PIX</p>
-                <p className="text-xs mb-2">Abra o app do seu banco e escaneie o código</p>
-                <img src={qrCodeDataUrl} alt="QR Code PIX" className="mx-auto border-4 border-black" />
-            </div>
-            
-            <hr className="border-dashed border-black my-2" />
-            
-            <div className="text-xs text-center mt-2">
+            <div className="text-sm text-center mt-2">
                 <p className="font-bold">BILHAR MONTANHA</p>
                 <p>CNPJ: 76.089.440/0001-29</p>
                 <p>Jaguapitã - PR</p>
@@ -52,11 +55,10 @@ const DebtStatementSheet: React.FC<DebtStatementSheetProps> = ({ customer, qrCod
 
             <hr className="border-dashed border-black my-2" />
 
-            <div className="text-xs text-center mt-4">
+            <div className="text-sm text-center mt-4">
                 <p className="font-bold">MONTANHA BILHAR E JUKEBOX</p>
                 <p>DIVERSÃO LEVADO A SÉRIO</p>
             </div>
-
         </div>
     );
 };

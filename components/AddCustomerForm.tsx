@@ -84,6 +84,15 @@ const AddCustomerForm: React.FC<AddCustomerFormProps> = ({ customers, onAddCusto
         onCancel={() => setIsOpen(false)}
         submitButtonText="Salvar Cliente"
       />
+       <style>{`
+        @keyframes blink-cancel {
+          0%, 100% { background-color: #ef4444; } /* red-500 */
+          50% { background-color: #eab308; } /* yellow-500 */
+        }
+        .animate-blink-cancel {
+          animation: blink-cancel 0.5s step-end infinite;
+        }
+      `}</style>
     </div>
   );
 };

@@ -188,7 +188,7 @@ const ClientesView: React.FC<ClientesViewProps> = ({
   }, []);
 
   return (
-    <>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <PageHeader title="Clientes e Rotas" subtitle="Gerencie seus clientes, equipamentos e rotas de visita." />
 
       <div className="mb-8">
@@ -205,7 +205,7 @@ const ClientesView: React.FC<ClientesViewProps> = ({
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><SearchIcon className="w-5 h-5 text-slate-400" /></div>
                 <input type="text" placeholder="Filtrar por nome, cidade, linha ou nº do equipamento..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} autoComplete="off" className="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 pl-10 pr-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
             </div>
-            <button onClick={onOpenFastBilling} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-slate-600 text-white font-bold py-2 px-4 rounded-md hover:bg-slate-500 transition-colors"><QrCodeIcon className="w-5 h-5" /><span>Faturamento Rápido</span></button>
+            <button onClick={onOpenFastBilling} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-white font-bold py-2 px-4 rounded-md transition-colors animate-blink-fast-billing-sidebar"><QrCodeIcon className="w-5 h-5" /><span>Faturamento Rápido</span></button>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
             <button onClick={() => setEquipmentFilter('all')} className={`flex flex-col items-center p-2 rounded-lg transition-colors ${equipmentFilter === 'all' ? 'bg-lime-500 text-white shadow-md' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`}><ListBulletIcon className={`w-8 h-8 ${equipmentFilter === 'all' ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} /><span className="text-xs font-bold mt-1">Todos</span></button>
@@ -258,7 +258,7 @@ const ClientesView: React.FC<ClientesViewProps> = ({
                 const routeCustomers = route.customerIds.map(id => customers.find(c => c.id === id)).filter((c): c is Customer => !!c);
                 return(
                     <section key={route.id} className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700">
-                        <div className="flex justify-between items-center mb-4"><h2 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2"><MapIcon className="w-6 h-6 text-slate-400" />{route.name} ({route.customerIds.length})</h2><button onClick={() => onDeleteRoute(route.id)} className="text-red-500 hover:text-red-400 p-2 rounded-full hover:bg-red-500/10" title="Excluir Rota"><TrashIcon className="w-5 h-5"/></button></div>
+                        <div className="flex justify-between items-center mb-4"><h2 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2"><MapIcon className="w-6 h-6 text-slate-400" />{route.name} ({route.customerIds.length})</h2><button onClick={() => onDeleteRoute(route.id)} className="text-red-500 hover:text-red-400 p-2 rounded-full hover:bg-red-500/10" title="Excluir Rota"><TrashIcon className="w-5 h-5" /></button></div>
                         <div className="flex flex-col gap-4">{routeCustomers.map((customer, idx) => (<div key={customer.id} className="flex items-center gap-4"><span className="font-bold text-xl text-lime-500 w-8 text-center">{idx + 1}.</span><div className="flex-grow"><CustomerCard customer={customer} billings={billings} hasActiveWarning={warnings.some(w => w.customerId === customer.id && !w.isResolved)} onBill={onBillCustomer} onEdit={onEditCustomer} onDelete={onDeleteCustomer} onPayDebt={onPayDebtCustomer} onHistory={onHistoryCustomer} showNotification={showNotification} onFocusCustomer={setFocusedCustomer} onFichaActions={onFichaActions} onLocationActions={onLocationActions} onWhatsAppActions={onWhatsAppActions} onFinalizePendingPayment={onFinalizePendingPayment} onPendingPaymentAction={onPendingPaymentAction} areValuesHidden={areValuesHidden} onUpdateCustomer={onUpdateCustomer} onWarningClick={handleWarningClick} /></div></div>))}</div>
                     </section>
                 )
@@ -279,7 +279,18 @@ const ClientesView: React.FC<ClientesViewProps> = ({
       {focusedCustomer && <FullScreenCustomerView customer={focusedCustomer} onClose={() => setFocusedCustomer(null)} warnings={warnings} onWarningClick={handleWarningClick} />}
       <WarningDetailsModal isOpen={!!viewingWarning} onClose={() => setViewingWarning(null)} customer={viewingWarning?.customer || null} warning={viewingWarning?.warning || null} />
       <HistoryModal isOpen={!!historyCustomer} onClose={() => setHistoryCustomer(null)} customer={historyCustomer} billings={billings} equipments={allEquipments} />
-    </>
+    
+      <style>{`
+        @keyframes blink-fast-billing-sidebar {
+            0%, 100% { background-color: #22c55e; } 
+            33% { background-color: #ef4444; }      
+            66% { background-color: #3b82f6; }      
+        }
+        .animate-blink-fast-billing-sidebar {
+            animation: blink-fast-billing-sidebar 1s infinite;
+        }
+      `}</style>
+    </div>
   );
 };
 

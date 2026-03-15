@@ -94,7 +94,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
                 <div className="mb-6">
                     <button 
                         onClick={handleFastBillingClick}
-                        className="w-full flex items-center justify-center rounded-md p-3 transition-colors text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-500 shadow-md"
+                        className="w-full flex items-center justify-center rounded-md p-3 transition-colors text-sm font-medium text-white shadow-md animate-blink-fast-billing-sidebar"
                     >
                         <BilliardIcon className="w-5 h-5 mr-3" />
                         <span>Faturamento Rápido</span>
@@ -116,6 +116,16 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, setIsOp
                     </div>
                 </div>
             </aside>
+            <style>{`
+            @keyframes blink-fast-billing-sidebar {
+                0%, 100% { background-color: #22c55e; } 
+                33% { background-color: #ef4444; }      
+                66% { background-color: #3b82f6; }      
+            }
+            .animate-blink-fast-billing-sidebar {
+                animation: blink-fast-billing-sidebar 1s infinite;
+            }
+        `}</style>
         </>
     );
 };

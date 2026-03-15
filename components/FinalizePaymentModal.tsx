@@ -130,17 +130,24 @@ const FinalizePaymentModal: React.FC<FinalizePaymentModalProps> = ({ isOpen, onC
             </div>
             {error && <p className="text-red-400 text-xs mt-1 text-center">{error}</p>}
         </div>
-        <div className="p-6 bg-slate-800/50 rounded-b-lg flex justify-end gap-4">
-          <button onClick={onClose} className="bg-slate-600 text-white font-bold py-2 px-6 rounded-md hover:bg-slate-500 transition-colors">Cancelar</button>
-          <button onClick={handleConfirm} disabled={!!error} className="bg-lime-500 text-white font-bold py-2 px-6 rounded-md hover:bg-lime-600 transition-colors inline-flex items-center gap-2 disabled:bg-slate-500 disabled:cursor-not-allowed">
-            <CurrencyDollarIcon className="w-5 h-5" />
-            Finalizar Cobrança
-          </button>
+        <div className="p-4 bg-slate-800/50 rounded-b-lg flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+            <button onClick={onClose} className="w-full sm:w-auto justify-center text-white font-bold py-2 px-6 rounded-md transition-colors animate-blink-cancel">Cancelar</button>
+            <button onClick={handleConfirm} disabled={!!error} className="w-full sm:w-auto justify-center bg-lime-500 text-white font-bold py-2 px-6 rounded-md hover:bg-lime-600 transition-colors inline-flex items-center gap-2 disabled:bg-slate-500 disabled:cursor-not-allowed">
+                <CurrencyDollarIcon className="w-5 h-5" />
+                Finalizar Cobrança
+            </button>
         </div>
       </div>
       <style>{`
         @keyframes fade-in-up { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
         .animate-fade-in-up { animation: fade-in-up 0.3s ease-out forwards; }
+        @keyframes blink-cancel {
+          0%, 100% { background-color: #ef4444; } /* red-500 */
+          50% { background-color: #eab308; } /* yellow-500 */
+        }
+        .animate-blink-cancel {
+          animation: blink-cancel 0.5s step-end infinite;
+        }
       `}</style>
     </div>
   );

@@ -204,87 +204,96 @@ const BillingsList: React.FC<BillingsListProps> = ({ billings, onEdit, onDelete,
 );
 
 const DebtorsList: React.FC<DebtorsListProps> = ({ debtorCustomers, totalDebt, onPrint, onPayDebtCustomer, onPrintDebtStatement, areValuesHidden }) => (
-    <div className="bg-white/75 dark:bg-slate-800/75 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div className="flex justify-between items-center p-4 bg-slate-100 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Clientes Devedores ({debtorCustomers.length})</h3>
-            <button onClick={onPrint} className="inline-flex items-center gap-2 bg-sky-600 text-white font-bold py-2 px-4 rounded-md hover:bg-sky-500">
-                <DocumentDuplicateIcon className="w-5 h-5" />
-                <span className="hidden sm:inline">Imprimir Lista</span>
-            </button>
+    <>
+        {/* Mobile View: Cards */}
+        <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+            {debtorCustomers.length > 0 ? debtorCustomers.map((customer: Customer) => (
+                <div key={customer.id} className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 flex flex-col">
+                    <div className="text-center flex-grow">
+                        <p className="font-bold text-slate-900 dark:text-white truncate">{customer.name}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{customer.cidade}, {customer.estado}</p>
+                        <p className="font-mono font-bold text-2xl text-red-500 dark:text-red-400 my-3">
+                            {areValuesHidden ? 'R$ •••,••' : `R$ ${customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                        </p>
+                    </div>
+                    <div className="mt-auto flex flex-col gap-2">
+                        <button
+                            onClick={() => onPrintDebtStatement(customer)}
+                            className="w-full bg-sky-600 text-white font-bold py-2 px-3 rounded-md hover:bg-sky-500 text-sm flex items-center justify-center gap-2"
+                        >
+                           <DocumentDuplicateIcon className="w-5 h-5" /> Demonstrativo
+                        </button>
+                        <button
+                            onClick={() => onPayDebtCustomer(customer)}
+                            className="w-full bg-amber-600 text-white font-bold py-2 px-3 rounded-md hover:bg-amber-500 text-sm flex items-center justify-center gap-2"
+                        >
+                           <CurrencyDollarIcon className="w-5 h-5" /> Pagar/Adicionar
+                        </button>
+                    </div>
+                </div>
+            )) : (
+                <div className="col-span-1 sm:col-span-2 text-center py-16 px-6 bg-slate-100 dark:bg-slate-800/50 rounded-lg shadow-inner">
+                    <h3 className="text-xl font-bold text-slate-700 dark:text-slate-300">Nenhuma Dívida Pendente</h3>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2">Todos os clientes estão com os pagamentos em dia.</p>
+                </div>
+            )}
         </div>
 
-        <div className="md:hidden">
-            <ul className="divide-y divide-slate-200 dark:divide-slate-700">
-                {debtorCustomers.length > 0 ? debtorCustomers.map((customer: Customer) => (
-                    <li key={customer.id} className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                                <p className="font-bold text-slate-900 dark:text-white truncate">{customer.name}</p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{customer.cidade}</p>
-                            </div>
-                            <div className="text-right ml-4">
-                                <p className="font-mono font-bold text-lg text-red-500 dark:text-red-400">
-                                {areValuesHidden ? 'R$ •••,••' : `R$ ${customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="mt-4 flex flex-col sm:flex-row gap-2">
-                            <button
-                                onClick={() => onPayDebtCustomer(customer)}
-                                className="flex-1 bg-amber-600 text-white font-bold py-2 px-3 rounded-md hover:bg-amber-500 text-sm flex items-center justify-center gap-2"
-                            >
-                               <CurrencyDollarIcon className="w-5 h-5" /> Pagar/Adicionar
-                            </button>
-                            <button
-                                onClick={() => onPrintDebtStatement(customer)}
-                                className="flex-1 bg-slate-600 text-white font-bold py-2 px-3 rounded-md hover:bg-slate-500 text-sm flex items-center justify-center gap-2"
-                            >
-                               <DocumentDuplicateIcon className="w-5 h-5" /> Demonstrativo
-                            </button>
-                        </div>
-                    </li>
-                )) : <p className="text-center py-10 text-slate-500 dark:text-slate-400 italic">Nenhum cliente com dívida pendente.</p>}
-            </ul>
-        </div>
-
-        {/* Desktop View */}
-        <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-sm">
-                <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-100 dark:bg-slate-700/50">
-                    <tr>
-                        <th scope="col" className="px-6 py-3 text-left">Cliente</th>
-                        <th scope="col" className="px-6 py-3 text-left">Cidade</th>
-                        <th scope="col" className="px-6 py-3 text-right">Valor da Dívida</th>
-                        <th scope="col" className="px-6 py-3 text-center">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {debtorCustomers.length > 0 ? debtorCustomers.map((customer: Customer) => (
-                        <tr key={customer.id} className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                            <td className="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{customer.name}</td>
-                            <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{customer.cidade}</td>
-                            <td className="px-6 py-4 text-right font-mono font-bold text-red-500 dark:text-red-400">{areValuesHidden ? 'R$ •••,••' : `R$ ${customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td>
-                            <td className="px-6 py-4 text-center">
-                                <div className="flex justify-center items-center gap-2">
-                                    <button onClick={() => onPayDebtCustomer(customer)} className="bg-amber-600 text-white font-bold py-1 px-3 rounded-md hover:bg-amber-500 text-xs">Pagar/Adicionar</button>
-                                    <button onClick={() => onPrintDebtStatement(customer)} className="bg-slate-600 text-white font-bold py-1 px-3 rounded-md hover:bg-slate-500 text-xs">Demonstrativo</button>
-                                </div>
-                            </td>
+        {/* Desktop View: Table */}
+        <div className="hidden md:block bg-white/75 dark:bg-slate-800/75 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Clientes Devedores ({debtorCustomers.length})</h3>
+                <button onClick={onPrint} className="inline-flex items-center gap-2 bg-sky-600 text-white font-bold py-2 px-4 rounded-md hover:bg-sky-500">
+                    <DocumentDuplicateIcon className="w-5 h-5" />
+                    <span className="hidden sm:inline">Imprimir Lista</span>
+                </button>
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-100 dark:bg-slate-700/50">
+                        <tr>
+                            <th scope="col" className="px-6 py-3 text-left">Cliente</th>
+                            <th scope="col" className="px-6 py-3 text-left">Cidade</th>
+                            <th scope="col" className="px-6 py-3 text-right">Valor da Dívida</th>
+                            <th scope="col" className="px-6 py-3 text-center">Ações</th>
                         </tr>
-                    )) : (<tr><td colSpan={4} className="text-center py-16 text-slate-500 dark:text-slate-400 italic">Nenhum cliente com dívida pendente.</td></tr>)}
-                </tbody>
-                <tfoot className="bg-slate-100 dark:bg-slate-700/50 font-bold text-slate-900 dark:text-white">
-                    <tr>
-                        <td colSpan={2} className="text-right px-6 py-3 uppercase">Total Geral de Dívidas</td>
-                        <td className="text-right px-6 py-3 font-mono text-lg text-red-500 dark:text-red-400">{areValuesHidden ? 'R$ •••,••' : `R$ ${totalDebt.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
+                    </thead>
+                    <tbody>
+                        {debtorCustomers.length > 0 ? debtorCustomers.map((customer: Customer) => (
+                            <tr key={customer.id} className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                <td className="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{customer.name}</td>
+                                <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{customer.cidade}</td>
+                                <td className="px-6 py-4 text-right font-mono font-bold text-red-500 dark:text-red-400">{areValuesHidden ? 'R$ •••,••' : `R$ ${customer.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td>
+                                <td className="px-6 py-4 text-center">
+                                    <div className="flex justify-center items-center gap-2">
+                                        <button onClick={() => onPayDebtCustomer(customer)} className="bg-amber-600 text-white font-bold py-1 px-3 rounded-md hover:bg-amber-500 text-xs">Pagar/Adicionar</button>
+                                        <button onClick={() => onPrintDebtStatement(customer)} className="bg-slate-600 text-white font-bold py-1 px-3 rounded-md hover:bg-slate-500 text-xs">Demonstrativo</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        )) : (<tr><td colSpan={4} className="text-center py-16 text-slate-500 dark:text-slate-400 italic">Nenhum cliente com dívida pendente.</td></tr>)}
+                    </tbody>
+                    <tfoot className="bg-slate-100 dark:bg-slate-700/50 font-bold text-slate-900 dark:text-white">
+                        <tr>
+                            <td colSpan={2} className="text-right px-6 py-3 uppercase">Total Geral de Dívidas</td>
+                            <td className="text-right px-6 py-3 font-mono text-lg text-red-500 dark:text-red-400">{areValuesHidden ? 'R$ •••,••' : `R$ ${totalDebt.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
         </div>
 
-        {debtorCustomers.length > 0 && (<div className="md:hidden p-4 bg-slate-100 dark:bg-slate-700/50 flex justify-between font-bold text-slate-900 dark:text-white"><span>TOTAL</span><span className="font-mono text-lg text-red-500 dark:text-red-400">{areValuesHidden ? 'R$ •••,••' : `R$ ${totalDebt.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span></div>)}
-    </div>
+        {/* Total for mobile */}
+        {debtorCustomers.length > 0 && (
+            <div className="md:hidden mt-4 p-4 bg-slate-100 dark:bg-slate-700/50 rounded-lg shadow-md flex justify-between items-center font-bold text-slate-900 dark:text-white">
+                <span>TOTAL DE DÍVIDAS</span>
+                <span className="font-mono text-lg text-red-500 dark:text-red-400">
+                    {areValuesHidden ? 'R$ •••,••' : `R$ ${totalDebt.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                </span>
+            </div>
+        )}
+    </>
 );
 
 const CobrancasView: React.FC<CobrancasViewProps> = ({ 
@@ -466,7 +475,7 @@ const CobrancasView: React.FC<CobrancasViewProps> = ({
     };
 
     return (
-        <>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <PageHeader title="Cobranças e Dívidas" subtitle="Visualize cobranças e dívidas pendentes." />
             
             <div className="bg-white/75 dark:bg-slate-800/75 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 mb-8 space-y-4">
@@ -538,7 +547,7 @@ const CobrancasView: React.FC<CobrancasViewProps> = ({
             {activeTab === 'debtors' && <DebtorsList debtorCustomers={debtorCustomers} totalDebt={totalDebt} onPrint={handlePrintDebtors} onPayDebtCustomer={onPayDebtCustomer} onPrintDebtStatement={onPrintDebtStatement} areValuesHidden={areValuesHidden} />}
             
             {deletingBilling && <ActionModal isOpen={!!deletingBilling} onClose={() => setDeletingBilling(null)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" confirmText="Sim, Excluir"><p>Tem certeza que deseja excluir esta cobrança para <strong>{deletingBilling.customerName}</strong> no valor de <strong>R$ {deletingBilling.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>?</p><p className="mt-2 text-amber-500 dark:text-amber-300">Esta ação irá reverter a leitura do relógio do equipamento e, se aplicável, o valor da dívida do cliente.</p></ActionModal>}
-        </>
+        </div>
     );
 };
 

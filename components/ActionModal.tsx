@@ -28,7 +28,7 @@ const ActionModal: React.FC<ActionModalProps> = ({ isOpen, onClose, onConfirm, t
         <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-b-lg flex justify-end gap-4">
           <button
             onClick={onClose}
-            className="bg-slate-200 text-slate-800 dark:bg-slate-600 dark:text-white font-bold py-2 px-6 rounded-md hover:bg-slate-300 dark:hover:bg-slate-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-slate-500 transition-colors duration-200"
+            className="text-white font-bold py-2 px-6 rounded-md transition-colors animate-blink-cancel"
           >
             Cancelar
           </button>
@@ -48,6 +48,13 @@ const ActionModal: React.FC<ActionModalProps> = ({ isOpen, onClose, onConfirm, t
         }
         .animate-fade-in-up {
           animation: fade-in-up 0.3s ease-out forwards;
+        }
+        @keyframes blink-cancel {
+          0%, 100% { background-color: #ef4444; } /* red-500 */
+          50% { background-color: #eab308; } /* yellow-500 */
+        }
+        .animate-blink-cancel {
+          animation: blink-cancel 0.5s step-end infinite;
         }
       `}</style>
     </div>

@@ -111,7 +111,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill,
             onClick={onClick}
             disabled={disabled}
             title={title}
-            className={`flex flex-col items-center justify-center w-full p-2 rounded-lg font-medium transition-colors text-center ${
+            className={`flex flex-col items-center justify-center w-full p-2 rounded-lg font-medium transition-colors text-center ${pulse ? '' : colorClass} ${
                 disabled
                 ? 'bg-slate-500 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
                 : isPrimary
