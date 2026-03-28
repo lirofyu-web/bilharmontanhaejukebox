@@ -36,6 +36,8 @@ jobs:
 
       - name: Build Android APK
         run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-35" "platforms;android-36" "build-tools;35.0.0" "build-tools;36.0.0"
           cd android
           chmod +x gradlew
           ./gradlew clean assembleDebug --info -Pandroid.incremental=false
