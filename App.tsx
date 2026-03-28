@@ -11,8 +11,6 @@ import { Customer, Billing, Expense, DebtPayment, Equipment, Warning, View, Them
 import { queueMutation, processSyncQueue, clearOfflineQueue, processPayloadForFirestore, getPendingMutationsCount } from './utils/offlineSync';
 import { v4 as uuidv4 } from 'uuid';
 import { Capacitor } from '@capacitor/core';
-import { StatusBar, Style } from '@capacitor/status-bar';
-import { NavigationBar } from '@capgo/capacitor-navigation-bar';
 import { Network } from '@capacitor/network';
 
 import Sidebar from './components/Sidebar';
@@ -231,23 +229,6 @@ const App: React.FC = () => {
             window.removeEventListener('mousedown', unlock);
             window.removeEventListener('touchstart', unlock);
         };
-    }, []);
-
-    // --- Fullscreen Mode (Immersive) for Capacitor ---
-    useEffect(() => {
-        const setupNativeUI = async () => {
-            if (Capacitor.isNativePlatform()) {
-                try {
-                    // Hide Status Bar
-                    await StatusBar.hide();
-                    // Hide Navigation Bar (Android bottom buttons)
-                    await NavigationBar.hide();
-                } catch (e) {
-                    console.warn('Could not hide system bars:', e);
-                }
-            }
-        };
-        setupNativeUI();
     }, []);
 
     // --- Native Network Monitoring ---
