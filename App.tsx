@@ -10,6 +10,10 @@ import { auth, db, processFirestoreDoc } from './firebase';
 import { Customer, Billing, Expense, DebtPayment, Equipment, Warning, View, Theme, UserProfile, SavedUser, Route } from './types';
 import { queueMutation, processSyncQueue, clearOfflineQueue, processPayloadForFirestore, getPendingMutationsCount } from './utils/offlineSync';
 import { v4 as uuidv4 } from 'uuid';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { NavigationBar } from '@capgo/capacitor-navigation-bar';
+import { Network } from '@capacitor/network';
 
 import Sidebar from './components/Sidebar';
 import DashboardView from './views/DashboardView';
@@ -32,6 +36,7 @@ import ActionFeedbackOverlay from './components/SuccessAnimationOverlay';
 import { optimizeRoute } from './utils/routeOptimizer';
 import { playSuccessSound, unlockAudio } from './utils/soundPlayer';
 import DebtStatementSheet from './components/DebtStatementSheet';
+import { nativePrintPDF } from './utils/nativePrint';
 
 // Modals
 import BillingModal from './components/BillingModal';
@@ -228,8 +233,60 @@ const App: React.FC = () => {
         };
     }, []);
 
-    // --- Fullscreen Mode on First Interaction ---
+    // --- Fullscreen Mode (Immersive) for Capacitor ---
     useEffect(() => {
+        const setupNativeUI = async () => {
+            if (Capacitor.isNativePlatform()) {
+                try {
+                    // Hide Status Bar
+                    await StatusBar.hide();
+                    // Hide Navigation Bar (Android bottom buttons)
+                    await NavigationBar.hide();
+                } catch (e) {
+                    console.warn('Could not hide system bars:', e);
+                }
+            }
+        };
+        setupNativeUI();
+    }, []);
+
+    // --- Native Network Monitoring ---
+    useEffect(() => {
+        let handler: any;
+        
+        const setupNetwork = async () => {
+            if (Capacitor.isNativePlatform()) {
+                const status = await Network.getStatus();
+                setIsOnline(status.connected);
+                if (!status.connected) {
+                    setSyncStatus('offline');
+                }
+
+                handler = await Network.addListener('networkStatusChange', status => {
+                    setIsOnline(status.connected);
+                    if (status.connected) {
+                        showNotification('Conexão reestabelecida. Sincronizando...', 'success');
+                        syncData();
+                    } else {
+                        setSyncStatus('offline');
+                        showNotification('Você está offline. As alterações serão salvas localmente.', 'success');
+                    }
+                });
+            }
+        };
+
+        setupNetwork();
+        return () => {
+            if (handler) {
+                handler.remove();
+            }
+        };
+    }, [syncData, showNotification]);
+
+    // --- Fullscreen Mode on First Interaction (Web Fallback) ---
+    useEffect(() => {
+        if (Capacitor.isNativePlatform()) return; // Capacitor handles this above
+
         const requestFullScreen = () => {
             const element = document.documentElement;
             if (element.requestFullscreen && !document.fullscreenElement) {
@@ -1550,14 +1607,13 @@ const App: React.FC = () => {
             
             const content = ReactDOMServer.renderToString(SheetComponent);
             const printableHtml = generatePrintableHtml(title, content);
-            const printWindow = window.open('', '', 'height=800,width=400');
-            if (printWindow) {
-                printWindow.document.write(printableHtml);
-                printWindow.document.close();
-                printWindow.focus();
-                setTimeout(() => { printWindow.print(); }, 500);
-            } else {
-                showNotification("Por favor, habilite pop-ups para imprimir.", "error");
+            
+            // Bridge: Use Native Print on Android, window.open on Web
+            try {
+                await nativePrintPDF(printableHtml, title);
+            } catch (err) {
+                console.error("Print error:", err);
+                showNotification(err instanceof Error ? err.message : "Erro ao imprimir.", "error");
             }
         } catch (error) {
             console.error("Error generating PDF receipt:", error);

@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Capacitor } from '@capacitor/core';
+import { nativePrintPDF } from './nativePrint';
 
 declare const html2canvas: any;
 declare const jspdf: any;
@@ -60,14 +62,16 @@ export const exportElementAsPDF = (element: HTMLElement, fileName: string): Prom
       const pdfBlob = doc.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
       
-      const newWindow = window.open(pdfUrl, '_blank');
-      if (newWindow) {
-        // Revoke the object URL after a delay to ensure the PDF has time to load.
-        setTimeout(() => URL.revokeObjectURL(pdfUrl), 2000);
+      try {
+        await nativePrintPDF(pdfUrl, fileName);
+        if (!Capacitor.isNativePlatform()) {
+           // For Web, revoke after delay
+           setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000);
+        }
         resolve();
-      } else {
-        URL.revokeObjectURL(pdfUrl); // Clean up if window fails to open
-        reject(new Error("Não foi possível abrir o PDF. Verifique se o seu navegador está bloqueando pop-ups."));
+      } catch (err) {
+        URL.revokeObjectURL(pdfUrl);
+        reject(err instanceof Error ? err : new Error("Falha ao imprimir o PDF."));
       }
 
     } catch (error) {
