@@ -64,11 +64,24 @@ const RotasView: React.FC<RotasViewProps> = ({ customers }) => {
     return filteredCustomersForRoute.filter(c => c.latitude != null && c.longitude != null).sort((a, b) => a.name.localeCompare(b.name)) as GeocodedCustomer[];
   }, [filteredCustomersForRoute]);
   
+  const nonGeocodedCustomers = useMemo(() => {
+    return filteredCustomersForRoute.filter(c => c.latitude == null || c.longitude == null).sort((a, b) => a.name.localeCompare(b.name));
+  }, [filteredCustomersForRoute]);
+
   const displayedCustomers = useMemo(() => {
-      return optimizedRoute || geocodedCustomers;
-  }, [optimizedRoute, geocodedCustomers]);
+      if (optimizedRoute) {
+          return [...optimizedRoute, ...nonGeocodedCustomers] as Customer[];
+      }
+      return filteredCustomersForRoute.sort((a, b) => a.name.localeCompare(b.name));
+  }, [optimizedRoute, filteredCustomersForRoute, nonGeocodedCustomers]);
 
   const customersByCity = useMemo(() => {
+    if (optimizedRoute) {
+        return {
+            'Rota Otimizada': optimizedRoute,
+            'Sem Localização Salva': nonGeocodedCustomers
+        };
+    }
     return displayedCustomers.reduce((acc, customer) => {
         const city = customer.cidade.trim() || 'Sem Cidade';
         if (!acc[city]) {
@@ -76,8 +89,8 @@ const RotasView: React.FC<RotasViewProps> = ({ customers }) => {
         }
         acc[city].push(customer);
         return acc;
-    }, {} as Record<string, GeocodedCustomer[]>);
-  }, [displayedCustomers]);
+    }, {} as Record<string, Customer[]>);
+  }, [displayedCustomers, optimizedRoute, nonGeocodedCustomers]);
   
   const equipmentCounts = useMemo(() => ({
     all: customers.length,
@@ -87,9 +100,13 @@ const RotasView: React.FC<RotasViewProps> = ({ customers }) => {
   }), [customers]);
 
   const sortedCities = useMemo(() => {
-      if (optimizedRoute) return ['Rota Otimizada'];
+      if (optimizedRoute) {
+          const keys = ['Rota Otimizada'];
+          if (nonGeocodedCustomers.length > 0) keys.push('Sem Localização Salva');
+          return keys;
+      }
       return Object.keys(customersByCity).sort((a, b) => a.localeCompare(b));
-  }, [customersByCity, optimizedRoute]);
+  }, [customersByCity, optimizedRoute, nonGeocodedCustomers]);
 
   useEffect(() => {
     if (selectedCustomerId && customerRefs.current[selectedCustomerId]) {
@@ -145,24 +162,14 @@ const RotasView: React.FC<RotasViewProps> = ({ customers }) => {
   };
   
   const handlePrintRoute = useCallback(() => {
-    const customersToPrint = displayedCustomers;
-    const customersByCity = customersToPrint
-      .sort((a, b) => a.cidade.localeCompare(b.cidade) || a.name.localeCompare(b.name))
-      .reduce((acc, customer) => {
-          const city = customer.cidade.trim() || 'Sem Cidade';
-          if (!acc[city]) acc[city] = [];
-          acc[city].push(customer);
-          return acc;
-      }, {} as Record<string, Customer[]>);
-
-    const sortedCities = Object.keys(customersByCity).sort((a, b) => a.localeCompare(b));
-
     const allItems: ({ type: 'city', name: string } | { type: 'customer', data: Customer })[] = [];
     sortedCities.forEach(city => {
         allItems.push({ type: 'city', name: city });
-        customersByCity[city].forEach(customer => {
-            allItems.push({ type: 'customer', data: customer });
-        });
+        if (customersByCity[city]) {
+            customersByCity[city].forEach(customer => {
+                allItems.push({ type: 'customer', data: customer });
+            });
+        }
     });
 
     const itemsPerPage = 35; // Adjusted for smaller font size
@@ -258,10 +265,10 @@ const RotasView: React.FC<RotasViewProps> = ({ customers }) => {
         printWindow.focus();
         printWindow.print();
     }
-  }, [displayedCustomers]);
+  }, [customersByCity, sortedCities]);
   
   const handleThermalPrint = useCallback(() => {
-    const thermalComponent = <ThermalRouteSheet customers={displayedCustomers} isOptimized={!!optimizedRoute} />;
+    const thermalComponent = <ThermalRouteSheet customersByCity={customersByCity} sortedCities={sortedCities} isOptimized={!!optimizedRoute} />;
     const htmlString = ReactDOMServer.renderToString(thermalComponent);
 
     const printWindow = window.open('', '_blank');
@@ -291,7 +298,7 @@ const RotasView: React.FC<RotasViewProps> = ({ customers }) => {
     } else {
         alert("Por favor, habilite pop-ups para impressão.");
     }
-}, [displayedCustomers, optimizedRoute]);
+}, [customersByCity, sortedCities, optimizedRoute]);
 
   return (
     <div className="h-full flex flex-col relative">
@@ -384,7 +391,7 @@ const RotasView: React.FC<RotasViewProps> = ({ customers }) => {
             {sortedCities.length > 0 ? sortedCities.map(city => (
               <div key={city} className="bg-slate-50 dark:bg-slate-900/50 rounded-lg">
                 <h4 className="text-md font-semibold text-lime-600 dark:text-lime-400 p-3 border-b border-slate-200 dark:border-slate-700 capitalize flex items-center gap-2">
-                    {optimizedRoute ? <RulerIcon className="w-5 h-5" /> : <LocationMarkerIcon className="w-5 h-5" />}
+                    {city === 'Rota Otimizada' ? <RulerIcon className="w-5 h-5" /> : <LocationMarkerIcon className="w-5 h-5" />}
                     {city}
                 </h4>
                 <ul className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -402,7 +409,8 @@ const RotasView: React.FC<RotasViewProps> = ({ customers }) => {
                               }`}
                             >
                               <div className="flex items-center gap-2 mb-1">
-                                {optimizedRoute && <span className="font-bold text-lime-500 text-lg w-6 text-center">{index + 1}.</span>}
+                                {city === 'Rota Otimizada' && <span className="font-bold text-lime-500 text-lg w-6 text-center">{index + 1}.</span>}
+                                {city === 'Sem Localização Salva' && <span className="font-bold text-slate-500 text-lg w-6 text-center">-</span>}
                                 <div className="flex-shrink-0 flex items-center gap-1.5">
                                     {visitIsPending ? (
                                         <span title="Visita Pendente" className="block w-2.5 h-2.5 bg-red-500 rounded-full"></span>

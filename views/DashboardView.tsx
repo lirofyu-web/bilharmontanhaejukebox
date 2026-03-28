@@ -1,5 +1,5 @@
 // views/DashboardView.tsx
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { Customer, Billing, Expense, DebtPayment, Warning, Equipment } from '../types';
 import PageHeader from '../components/PageHeader';
 import { JukeboxIcon } from '../components/icons/JukeboxIcon';
@@ -10,7 +10,6 @@ import DebtReminders from '../components/DebtReminders';
 import { ChartBarIcon } from '../components/icons/ChartBarIcon';
 import { CreditCardIcon } from '../components/icons/CreditCardIcon';
 import WarningsReminders from '../components/WarningsReminders';
-import BackupReminder from '../components/BackupReminder';
 import { CalculatorIcon } from '../components/icons/CalculatorIcon';
 import { CurrencyDollarIcon } from '../components/icons/CurrencyDollarIcon';
 import { LocationMarkerIcon } from '../components/icons/LocationMarkerIcon';
@@ -27,6 +26,7 @@ interface DashboardViewProps {
   onResolveWarning: (warningId: string) => void;
   onDeleteWarning: (warningId: string) => void;
   lastBackupDate: string | null;
+  onExportData: () => void;
   onNavigateToSettings: () => void;
   areValuesHidden: boolean;
   deletedCustomersLog: { customer: Customer, deletedAt: Date }[];
@@ -141,7 +141,7 @@ const FinancialPerformanceCard: React.FC<FinancialPerformanceCardProps> = React.
                         <span className="hidden sm:inline">Desempenho Financeiro</span>
                         <span className="sm:hidden">Desempenho</span>
                     </h3>
-                     <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 hidden sm:block">Análise de Faturamento Bruto vs. Saldo Líquido.</p>
+                     <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 hidden sm:block">Análise de COBRANÇA Bruta vs. Saldo Líquido.</p>
                 </div>
                  <div className="flex-shrink-0 bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg self-end sm:self-center">
                     <button onClick={() => onChartViewChange('total')} className={`px-2 sm:px-3 py-1 text-xs font-bold rounded-md transition-colors ${chartView === 'total' ? 'bg-white dark:bg-slate-600 text-slate-800 dark:text-white shadow' : 'text-slate-500 dark:text-slate-400'}`}>Total</button>
@@ -164,7 +164,7 @@ const FinancialPerformanceCard: React.FC<FinancialPerformanceCardProps> = React.
                             <div 
                                 className={`w-8 sm:w-12 md:w-16 rounded-t-md ${colors.revenue} relative transition-all duration-700 ease-out`} 
                                 style={{ height: revenueHeight }}
-                                title={areValuesHidden ? 'Valor Oculto' : `Faturamento: R$ ${item.faturamentoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                                title={areValuesHidden ? 'Valor Oculto' : `COBRANÇA: R$ ${item.faturamentoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                             >
                                 <div 
                                     className={`absolute bottom-0 left-0 right-0 rounded-t-md ${colors.profit}`} 
@@ -483,7 +483,7 @@ type MonthlyStats = {
     totalExpenses: number;
 };
 
-const DashboardView: React.FC<DashboardViewProps> = React.memo(({ billings, expenses, customers, debtPayments, warnings, onAddWarning, onResolveWarning, onDeleteWarning, lastBackupDate, onNavigateToSettings, areValuesHidden, deletedCustomersLog }) => {
+const DashboardView: React.FC<DashboardViewProps> = React.memo(({ billings, expenses, customers, debtPayments, warnings, onAddWarning, onResolveWarning, onDeleteWarning, lastBackupDate, onExportData, onNavigateToSettings, areValuesHidden, deletedCustomersLog }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [chartView, setChartView] = useState<ChartView>('total');
 
@@ -516,12 +516,12 @@ const DashboardView: React.FC<DashboardViewProps> = React.memo(({ billings, expe
 
         const totalDebtReceived = monthlyDebtPayments.reduce((sum, p) => sum + p.amountPaid, 0);
 
-        // Expenses by category
-        const expensesMesa = monthlyExpenses.filter(e => e.category === 'mesa').reduce((sum, e) => sum + e.amount, 0);
-        const expensesJukebox = monthlyExpenses.filter(e => e.category === 'jukebox').reduce((sum, e) => sum + e.amount, 0);
-        const expensesGrua = monthlyExpenses.filter(e => e.category === 'grua').reduce((sum, e) => sum + e.amount, 0);
-        const expensesGeral = monthlyExpenses.filter(e => e.category === 'geral' || !e.category).reduce((sum, e) => sum + e.amount, 0);
-        const totalExpenses = expensesMesa + expensesJukebox + expensesGrua + expensesGeral;
+        // Expenses (app currently does not map expenses to equipment types, so all drop to general)
+        const expensesMesa = 0;
+        const expensesJukebox = 0;
+        const expensesGrua = 0;
+        const totalExpenses = monthlyExpenses.reduce((sum, e) => sum + e.amount, 0);
+        const expensesGeral = totalExpenses;
         
         // Revenue for Mesas (Only direct payments)
         const revenueMesaDinheiro = monthlyBillings.filter(b => b.equipmentType === 'mesa').reduce((sum, b) => sum + (b.valorPagoDinheiro || 0), 0);
@@ -588,6 +588,27 @@ const DashboardView: React.FC<DashboardViewProps> = React.memo(({ billings, expe
         };
     }, [billings, expenses, customers, debtPayments, currentDate]);
     
+    // Automatic backup every 7 days
+    useEffect(() => {
+        if (customers.length === 0) return; // Wait until data is loaded to avoid exporting empty files
+        
+        let shouldBackup = false;
+        if (!lastBackupDate) {
+            shouldBackup = true;
+        } else {
+            const sevenDaysInMillis = 7 * 24 * 60 * 60 * 1000;
+            const lastBackupTime = new Date(lastBackupDate).getTime();
+            const now = new Date().getTime();
+            if (now - lastBackupTime > sevenDaysInMillis) {
+                shouldBackup = true;
+            }
+        }
+
+        if (shouldBackup) {
+            onExportData();
+        }
+    }, [customers, lastBackupDate, onExportData]);
+
     return (
         <div className="space-y-6 sm:space-y-8 p-2 sm:p-0 overflow-x-hidden">
             <PageHeader 
@@ -596,7 +617,6 @@ const DashboardView: React.FC<DashboardViewProps> = React.memo(({ billings, expe
             />
 
             <div className="space-y-6 sm:space-y-8">
-                <BackupReminder lastBackupDate={lastBackupDate} onNavigate={onNavigateToSettings} />
                 <DebtReminders customers={customers} areValuesHidden={areValuesHidden} />
                 <WarningsReminders warnings={warnings} />
             </div>

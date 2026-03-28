@@ -16,15 +16,16 @@ interface CityCustomersModalProps {
   onDeleteCustomer: (customer: Customer) => void;
   onPayDebtCustomer: (customer: Customer) => void;
   onHistoryCustomer: (customer: Customer) => void;
-  onShareCustomer: (customer: Customer) => void;
   showNotification: (message: string, type?: 'success' | 'error') => void;
   onFocusCustomer: (customer: Customer) => void;
+  onFichaActions: (customer: Customer) => void;
   onLocationActions: (customer: Customer) => void;
   onWhatsAppActions: (customer: Customer) => void;
   onFinalizePendingPayment: (billing: Billing) => void;
   onPendingPaymentAction: (customer: Customer, billing: Billing) => void;
   onWarningClick: (customer: Customer) => void;
   areValuesHidden: boolean;
+  onUpdateCustomer: (updatedCustomer: Partial<Customer> & { id: string }) => void;
 }
 
 const CityCustomersModal: React.FC<CityCustomersModalProps> = ({
@@ -38,15 +39,16 @@ const CityCustomersModal: React.FC<CityCustomersModalProps> = ({
   onDeleteCustomer,
   onPayDebtCustomer,
   onHistoryCustomer,
-  onShareCustomer,
   showNotification,
   onFocusCustomer,
+  onFichaActions,
   onLocationActions,
   onWhatsAppActions,
   onFinalizePendingPayment,
   onPendingPaymentAction,
   onWarningClick,
   areValuesHidden,
+  onUpdateCustomer,
 }) => {
 
   const handleFocus = (customer: Customer) => {
@@ -89,15 +91,16 @@ const CityCustomersModal: React.FC<CityCustomersModalProps> = ({
                       onDelete={onDeleteCustomer}
                       onPayDebt={onPayDebtCustomer}
                       onHistory={onHistoryCustomer}
-                      onShare={onShareCustomer}
                       showNotification={showNotification}
                       onFocusCustomer={handleFocus}
                       onLocationActions={onLocationActions}
                       onWhatsAppActions={onWhatsAppActions}
+                      onFichaActions={onFichaActions}
                       onFinalizePendingPayment={onFinalizePendingPayment}
                       onPendingPaymentAction={onPendingPaymentAction}
                       onWarningClick={onWarningClick}
                       areValuesHidden={areValuesHidden}
+                      onUpdateCustomer={onUpdateCustomer}
                     />
                 </div>
               );

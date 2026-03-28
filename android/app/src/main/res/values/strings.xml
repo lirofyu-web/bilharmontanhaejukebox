@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Montanha Bilhar e Jukebox</string>
+    <string name="title_activity_main">Montanha Bilhar e Jukebox</string>
+    <string name="package_name">com.montanha.jukebox</string>
+    <string name="custom_url_scheme">com.montanha.jukebox</string>
+</resources>

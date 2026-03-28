@@ -92,11 +92,11 @@ const EditBillingModal: React.FC<EditBillingModalProps> = ({ isOpen, onClose, on
     return (
       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
         <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-lg border border-slate-700 animate-fade-in-up max-h-[90vh] flex flex-col">
-          <div className="p-6 border-b border-slate-700">
+          <div className="p-6 border-b border-slate-700 flex-shrink-0">
             <h2 className="text-xl font-bold text-white">Editar Cobrança - Grua</h2>
             <p className="text-slate-400 break-words">{billing.customerName} - Grua {billing.equipmentNumero}</p>
           </div>
-          <div className="p-6 space-y-4 overflow-y-auto">
+          <div className="p-6 space-y-4 overflow-y-auto flex-grow">
             
             <div className="p-4 bg-slate-900/50 rounded-lg grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                 <h3 className="col-span-2 font-bold text-lime-400 mb-2">Dados Originais (Não Editável)</h3>
@@ -122,7 +122,7 @@ const EditBillingModal: React.FC<EditBillingModalProps> = ({ isOpen, onClose, on
 
             {error && <div className="mt-2 text-center text-sm p-2 rounded-md bg-red-900/50 text-red-300 flex items-center gap-2"><AlertIcon className="w-5 h-5"/>{error}</div>}
           </div>
-          <div className="p-6 bg-slate-800/50 rounded-b-lg flex justify-end gap-4">
+          <div className="p-6 bg-slate-800/50 rounded-b-lg flex justify-end gap-4 flex-shrink-0">
             <button onClick={onClose} className="bg-slate-600 text-white font-bold py-2 px-6 rounded-md hover:bg-slate-500">Cancelar</button>
             <button onClick={handleConfirm} disabled={!!error} className="bg-lime-500 text-white font-bold py-2 px-6 rounded-md hover:bg-lime-600 disabled:bg-slate-500 disabled:cursor-not-allowed">Salvar Alterações</button>
           </div>

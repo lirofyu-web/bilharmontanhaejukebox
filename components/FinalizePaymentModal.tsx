@@ -18,6 +18,7 @@ const FinalizePaymentModal: React.FC<FinalizePaymentModalProps> = ({ isOpen, onC
     bonus: '',
     negativo: ''
   });
+  const [relogioAtual, setRelogioAtual] = useState('');
   const [error, setError] = useState('');
 
   const valorTotalParaFirma = useMemo(() => billing.valorTotal - (billing.valorBonus || 0), [billing]);
@@ -32,6 +33,11 @@ const FinalizePaymentModal: React.FC<FinalizePaymentModalProps> = ({ isOpen, onC
         bonus: String(initialBonus > 0 ? initialBonus : ''),
         negativo: '0'
       });
+      if (billing.equipmentType === 'jukebox' && billing.relogioAtual > billing.relogioAnterior) {
+          setRelogioAtual(String(billing.relogioAtual));
+      } else {
+          setRelogioAtual('');
+      }
       setError('');
     }
   }, [isOpen, billing]);
@@ -51,12 +57,20 @@ const FinalizePaymentModal: React.FC<FinalizePaymentModalProps> = ({ isOpen, onC
     const totalDeclarado = vDinheiro + vPix + vNegativo;
     const difference = totalDeclarado - totalDevido;
 
+    let newError = '';
     if (Math.abs(difference) > 0.01) { // Tolera 1 centavo
-        setError(`A soma dos pagamentos (R$ ${totalDeclarado.toFixed(2)}) não corresponde ao total devido (R$ ${totalDevido.toFixed(2)}).`);
-    } else {
-        setError('');
+        newError = `A soma dos pagamentos (R$ ${totalDeclarado.toFixed(2)}) não corresponde ao total devido (R$ ${totalDevido.toFixed(2)}).`;
+    } else if (billing.equipmentType === 'jukebox') {
+        const ra = safeParseFloat(relogioAtual);
+        if (!relogioAtual) {
+            newError = 'Preencha a Leitura Atual.';
+        } else if (ra < billing.relogioAnterior) {
+            newError = `Leitura atual (${ra}) não pode ser menor que a anterior (${billing.relogioAnterior}).`;
+        }
     }
-  }, [paymentValues, billing.valorTotal]);
+
+    setError(newError);
+  }, [paymentValues, billing, relogioAtual]);
 
 
   const handleConfirm = useCallback(() => {
@@ -88,9 +102,14 @@ const FinalizePaymentModal: React.FC<FinalizePaymentModalProps> = ({ isOpen, onC
         valorDebitoNegativo: valorDebitoNegativo > 0 ? valorDebitoNegativo : undefined,
         valorBonus: valorBonus > 0 ? valorBonus : undefined,
     };
+
+    if (billing.equipmentType === 'jukebox') {
+        updatedBilling.relogioAtual = Math.round(safeParseFloat(relogioAtual));
+        updatedBilling.partidasJogadas = updatedBilling.relogioAtual - billing.relogioAnterior;
+    }
     
     onConfirm(updatedBilling);
-  }, [error, paymentValues, billing, onConfirm]);
+  }, [error, paymentValues, billing, relogioAtual, onConfirm]);
 
   if (!isOpen) return null;
 
@@ -99,16 +118,27 @@ const FinalizePaymentModal: React.FC<FinalizePaymentModalProps> = ({ isOpen, onC
       className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
       role="dialog"
     >
-      <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md border border-slate-700 animate-fade-in-up">
-        <div className="p-6 border-b border-slate-700">
+      <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md border border-slate-700 animate-fade-in-up flex flex-col max-h-[85vh]">
+        <div className="p-6 border-b border-slate-700 flex-shrink-0">
           <h2 className="text-2xl font-bold text-white">Finalizar Pagamento</h2>
           <p className="text-slate-400 break-words">Cliente: {billing.customerName}</p>
         </div>
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 overflow-y-auto flex-grow min-h-0">
             <div className="text-center">
                 <p className="text-slate-400">Total a Pagar</p>
                 <p className="text-3xl font-mono font-bold text-lime-400">R$ {valorTotalParaFirma.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
             </div>
+
+            {billing.equipmentType === 'jukebox' && (
+                <div className="bg-slate-900/50 p-4 rounded-lg space-y-3">
+                    <h3 className="text-lime-400 font-bold mb-2">Relógio Jukebox</h3>
+                    <p className="text-sm text-slate-400">Leitura Anterior: <span className="font-mono text-white">{billing.relogioAnterior}</span></p>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1">Leitura Atual</label>
+                        <input type="text" inputMode="numeric" value={relogioAtual} onChange={(e) => setRelogioAtual(e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-lime-500" />
+                    </div>
+                </div>
+            )}
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -130,7 +160,7 @@ const FinalizePaymentModal: React.FC<FinalizePaymentModalProps> = ({ isOpen, onC
             </div>
             {error && <p className="text-red-400 text-xs mt-1 text-center">{error}</p>}
         </div>
-        <div className="p-4 bg-slate-800/50 rounded-b-lg flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+        <div className="p-4 bg-slate-800/50 rounded-b-lg flex flex-col-reverse sm:flex-row sm:justify-end gap-3 flex-shrink-0">
             <button onClick={onClose} className="w-full sm:w-auto justify-center text-white font-bold py-2 px-6 rounded-md transition-colors animate-blink-cancel">Cancelar</button>
             <button onClick={handleConfirm} disabled={!!error} className="w-full sm:w-auto justify-center bg-lime-500 text-white font-bold py-2 px-6 rounded-md hover:bg-lime-600 transition-colors inline-flex items-center gap-2 disabled:bg-slate-500 disabled:cursor-not-allowed">
                 <CurrencyDollarIcon className="w-5 h-5" />

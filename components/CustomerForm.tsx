@@ -161,6 +161,12 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ customers, initialData, onS
         async (position) => {
             const { latitude, longitude } = position.coords;
             try {
+                if (!navigator.onLine) {
+                    setFormData(prev => ({ ...prev, latitude, longitude }));
+                    showNotification("Coordenadas salvas! (Modo Offline - Endereço não preenchido auto.)", "success");
+                    return;
+                }
+                
                 const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
                 if (!response.ok) throw new Error('Falha ao buscar endereço.');
                 const data = await response.json();
@@ -170,12 +176,12 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ customers, initialData, onS
                     const cityName = city || town || village || suburb || '';
                     const fullCity = `${cityName}, ${state || ''}`.replace(/^, |^ | ,$/g, '');
                     setFormData(prev => ({ ...prev, endereco: street, cidade: fullCity, latitude, longitude }));
-                    showNotification("Endereço preenchido!", "success");
+                    showNotification("Endereço preenchido e coordenadas salvas!", "success");
                 } else {
                     throw new Error("Endereço não encontrado.");
                 }
             } catch (err) {
-                showNotification(err instanceof Error ? err.message : "Erro desconhecido.", "error");
+                showNotification(err instanceof Error && err.message !== "Failed to fetch" ? err.message : "Coordenadas salvas, mas houve erro ao buscar o nome da rua.", "success");
                 setFormData(prev => ({ ...prev, latitude, longitude }));
             } finally {
                 setIsLocating(false);

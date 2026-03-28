@@ -23,7 +23,7 @@ const PendingPaymentActionModal: React.FC<PendingPaymentActionModalProps> = ({ i
       <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md border border-slate-700 animate-fade-in-up">
         <div className="p-6">
           <h2 id="pending-action-modal-title" className="text-2xl font-bold text-white">Pagamento Pendente Encontrado</h2>
-          <p className="text-slate-400 mt-4">Este cliente já possui um faturamento aguardando pagamento. O que você gostaria de fazer?</p>
+          <p className="text-slate-400 mt-4">Este cliente já possui uma COBRANÇA aguardando pagamento. O que você gostaria de fazer?</p>
         </div>
         <div className="p-6 bg-slate-800/50 rounded-b-lg flex flex-col gap-4">
           <button
@@ -38,7 +38,7 @@ const PendingPaymentActionModal: React.FC<PendingPaymentActionModalProps> = ({ i
             className="w-full inline-flex items-center justify-center gap-3 bg-sky-600 text-white font-bold py-3 px-4 rounded-md hover:bg-sky-500 transition-colors"
           >
             <PlusIcon className="w-5 h-5" />
-            <span>Faturar Novo Equipamento</span>
+            <span>COBRAR Novo Equipamento</span>
           </button>
           <button
             onClick={onClose}

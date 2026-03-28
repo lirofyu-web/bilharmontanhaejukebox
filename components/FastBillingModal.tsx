@@ -25,12 +25,12 @@ const FastBillingModal: React.FC<FastBillingModalProps> = ({ isOpen, onClose, on
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <BilliardIcon className="w-6 h-6 text-emerald-500" />
-            Faturamento Rápido
+            INICIAR COBRANÇA
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">&times;</button>
         </div>
         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-          Digite o número do equipamento para iniciar o faturamento imediatamente.
+          Digite o número do equipamento para iniciar a COBRANÇA imediatamente.
         </p>
         <div>
           <label htmlFor="equipmentNumber" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -55,7 +55,7 @@ const FastBillingModal: React.FC<FastBillingModalProps> = ({ isOpen, onClose, on
             onClick={handleConfirm}
             className="bg-emerald-600 text-white font-bold py-2 px-4 rounded-md hover:bg-emerald-500"
           >
-            Faturar
+            COBRAR
           </button>
         </div>
       </div>

@@ -8,7 +8,7 @@ import QRCode from 'qrcode';
 import { auth, db, processFirestoreDoc } from './firebase';
 
 import { Customer, Billing, Expense, DebtPayment, Equipment, Warning, View, Theme, UserProfile, SavedUser, Route } from './types';
-import { queueMutation, processSyncQueue, clearOfflineQueue, processPayloadForFirestore } from './utils/offlineSync';
+import { queueMutation, processSyncQueue, clearOfflineQueue, processPayloadForFirestore, getPendingMutationsCount } from './utils/offlineSync';
 import { v4 as uuidv4 } from 'uuid';
 
 import Sidebar from './components/Sidebar';
@@ -144,7 +144,7 @@ const App: React.FC = () => {
 
     // Privacy Mode State
     const isPrivacyModeEnabled = useMemo(() => !!userProfile?.privacyPinHash, [userProfile]);
-    const [isPrivacyUnlocked, setIsPrivacyUnlocked] = useState<boolean>(false);
+    const [isPrivacyUnlocked, setIsPrivacyUnlocked] = useState<boolean>(() => localStorage.getItem('privacyUnlocked') === 'true');
     const areValuesHidden = useMemo(() => isPrivacyModeEnabled && !isPrivacyUnlocked, [isPrivacyModeEnabled, isPrivacyUnlocked]);
     const [privacyPinModalState, setPrivacyPinModalState] = useState<{ isOpen: boolean; mode: 'create' | 'enter'; title: string; onConfirm: (pin: string) => void; error?: string }>({ isOpen: false, mode: 'enter', title: '', onConfirm: () => {} });
 
@@ -152,6 +152,29 @@ const App: React.FC = () => {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'offline'>('idle');
     const isSyncing = useRef(false);
+    const [pendingSyncCount, setPendingSyncCount] = useState(0);
+    const [lastSyncedCount, setLastSyncedCount] = useState(0);
+
+    const checkPendingCount = useCallback(async () => {
+        try {
+            const count = await getPendingMutationsCount();
+            setPendingSyncCount(count);
+        } catch (e) {
+            console.error(e);
+        }
+    }, []);
+
+    useEffect(() => {
+        checkPendingCount();
+        const handleMutationQueued = () => checkPendingCount();
+        const handleQueueCleared = () => setPendingSyncCount(0);
+        window.addEventListener('offline-mutation-queued', handleMutationQueued);
+        window.addEventListener('offline-queue-cleared', handleQueueCleared);
+        return () => {
+            window.removeEventListener('offline-mutation-queued', handleMutationQueued);
+            window.removeEventListener('offline-queue-cleared', handleQueueCleared);
+        }
+    }, [checkPendingCount]);
     
     // Theme and PWA states
     const [theme, setThemeState] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'dark');
@@ -291,9 +314,10 @@ const App: React.FC = () => {
         const pinHash = btoa(pin);
         try {
             await handleUpdateUserProfile({ privacyPinHash: pinHash });
-            setIsPrivacyUnlocked(false);
+            setIsPrivacyUnlocked(true);
+            localStorage.setItem('privacyUnlocked', 'true');
             setPrivacyPinModalState({ isOpen: false, mode: 'create', title: '', onConfirm: () => {} });
-            showNotification('Modo de privacidade ativado!', 'success');
+            showNotification('Modo de privacidade ativado! Seu dispositivo atual está desbloqueado.', 'success');
         } catch (error) {
             showNotification('Erro ao salvar o PIN.', 'error');
         }
@@ -303,8 +327,9 @@ const App: React.FC = () => {
         const pinHash = btoa(pin);
         if (userProfile?.privacyPinHash && userProfile.privacyPinHash === pinHash) {
             setIsPrivacyUnlocked(true);
+            localStorage.setItem('privacyUnlocked', 'true');
             setPrivacyPinModalState({ isOpen: false, mode: 'enter', title: '', onConfirm: () => {} });
-            showNotification('Valores visíveis nesta sessão.', 'success');
+            showNotification('Valores visíveis neste dispositivo.', 'success');
         } else {
             setPrivacyPinModalState(prev => ({ ...prev, error: 'PIN incorreto.' }));
         }
@@ -321,8 +346,9 @@ const App: React.FC = () => {
         try {
             await handleUpdateUserProfile({ privacyPinHash: "" });
             setIsPrivacyUnlocked(false);
+            localStorage.removeItem('privacyUnlocked');
             setPrivacyPinModalState({ isOpen: false, mode: 'enter', title: '', onConfirm: () => {} });
-            showNotification('Modo de privacidade desativado.', 'success');
+            showNotification('Modo de privacidade desativado globalmente.', 'success');
         } catch (error) {
             showNotification('Erro ao desativar o modo de privacidade.', 'error');
         }
@@ -331,7 +357,8 @@ const App: React.FC = () => {
     const handleToggleLock = useCallback(() => {
         if (isPrivacyUnlocked) {
             setIsPrivacyUnlocked(false);
-            showNotification('Valores ocultados.', 'success');
+            localStorage.removeItem('privacyUnlocked');
+            showNotification('Valores ocultados neste dispositivo.', 'success');
         } else {
             openPinModal('enter', 'Desbloquear Valores', handleUnlock);
         }
@@ -355,6 +382,7 @@ const App: React.FC = () => {
         try {
             const processedCount = await processSyncQueue(user?.uid || null);
             if (processedCount > 0) {
+                setLastSyncedCount(processedCount);
                 showNotification(`${processedCount} ação(ões) offline foram sincronizadas!`, 'success');
             }
             setSyncStatus('synced');
@@ -431,6 +459,7 @@ const App: React.FC = () => {
             await signOut(auth);
             setUserProfile(null);
             setIsPrivacyUnlocked(false);
+            localStorage.removeItem('privacyUnlocked');
         } catch (error) {
             showNotification('Erro ao sair da conta.', 'error');
         }
@@ -454,6 +483,7 @@ const App: React.FC = () => {
             if (!user) {
                 setUserProfile(null);
                 setIsPrivacyUnlocked(false);
+                localStorage.removeItem('privacyUnlocked');
             }
             setIsLoadingAuth(false);
         });
@@ -667,7 +697,7 @@ const App: React.FC = () => {
     
         const customerToUpdate = originalCustomers.find(c => c.id === billing.customerId);
         if (!customerToUpdate) {
-            showNotification('Cliente não encontrado para faturamento.', 'error');
+            showNotification('Cliente não encontrado para COBRANÇA.', 'error');
             setIsSaving(false);
             return;
         }
@@ -713,7 +743,7 @@ const App: React.FC = () => {
                 setActionFeedbackState({ isOpen: true, variant: 'pending', message: 'Pagamento Pendente' });
             }
         } catch (error) {
-            showNotification('Erro ao salvar faturamento. Alterações desfeitas.', 'error');
+            showNotification('Erro ao salvar COBRANÇA. Alterações desfeitas.', 'error');
             setCustomers(originalCustomers);
             setBillings(originalBillings);
             console.error(error);
@@ -1073,7 +1103,21 @@ const App: React.FC = () => {
         if (!customerToUpdate) return;
 
         const debtToAdd = updatedBilling.valorDebitoNegativo || 0;
-        const updatedCustomer = { ...customerToUpdate, debtAmount: (customerToUpdate.debtAmount || 0) + debtToAdd };
+        
+        const updatedCustomerEquipment = customerToUpdate.equipment.map(eq => {
+            if (eq.id === updatedBilling.equipmentId) {
+                if (updatedBilling.equipmentType === 'jukebox' && updatedBilling.relogioAtual !== undefined) {
+                     return { ...eq, relogioAnterior: updatedBilling.relogioAtual };
+                }
+            }
+            return eq;
+        });
+
+        const updatedCustomer = { 
+            ...customerToUpdate, 
+            debtAmount: (customerToUpdate.debtAmount || 0) + debtToAdd,
+            equipment: updatedCustomerEquipment 
+        };
 
         setBillings(prev => prev.map(b => b.id === updatedBilling.id ? updatedBilling : b));
         setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
@@ -1544,21 +1588,21 @@ const App: React.FC = () => {
 
     const renderActiveView = () => {
         switch (currentView) {
-            case 'DASHBOARD': return <DashboardView billings={billings} expenses={expenses} customers={customers} debtPayments={debtPayments} warnings={warnings} onAddWarning={handleAddWarning} onResolveWarning={handleResolveWarning} onDeleteWarning={handleDeleteWarning} lastBackupDate={lastBackupTimestamp} onNavigateToSettings={() => setView('CONFIGURACOES')} areValuesHidden={areValuesHidden} deletedCustomersLog={deletedCustomersLog} />;
+            case 'DASHBOARD': return <DashboardView billings={billings} expenses={expenses} customers={customers} debtPayments={debtPayments} warnings={warnings} onAddWarning={handleAddWarning} onResolveWarning={handleResolveWarning} onDeleteWarning={handleDeleteWarning} lastBackupDate={lastBackupTimestamp} onExportData={handleExportData} onNavigateToSettings={() => setView('CONFIGURACOES')} areValuesHidden={areValuesHidden} deletedCustomersLog={deletedCustomersLog} />;
             case 'CLIENTES': return <ClientesView customers={customers} warnings={warnings} billings={billings} routes={routes} onAddCustomer={handleAddCustomer} onUpdateCustomer={handleUpdateCustomerPartial} isSaving={isSaving} showNotification={showNotification} onFichaActions={handleOpenFichaActionsModal} onBillCustomer={handleOpenBillingModal} onEditCustomer={handleOpenEditCustomerModal} onDeleteCustomer={handleOpenDeleteModal} onPayDebtCustomer={handleOpenDebtPaymentModal} onOpenFastBilling={() => setIsFastBillingModalOpen(true)} onLocationActions={handleOpenLocationActions} onWhatsAppActions={handleWhatsAppActions} onFinalizePendingPayment={(billing) => setFinalizePaymentModalState({ isOpen: true, billing })} areValuesHidden={areValuesHidden} onPendingPaymentAction={(customer, billing) => setPendingPaymentActionModalState({ isOpen: true, customer, pendingBilling: billing })} onOpenRouteCreator={() => setIsRouteCreationModalOpen(true)} onSaveRoute={handleSaveRoute} onDeleteRoute={handleDeleteRoute} />;
             case 'COBRANCAS': return <CobrancasView billings={billings} customers={customers} debtPayments={debtPayments} onShowActions={(billing) => setReceiptActionsModalState({ isOpen: true, billing, isProvisional: false })} onEditBilling={handleOpenEditBillingModal} onDeleteBilling={handleDeleteBilling} onFinalizePayment={(billing) => setFinalizePaymentModalState({ isOpen: true, billing })} onPayDebtCustomer={handleOpenDebtPaymentModal} onPrintDebtStatement={(customer) => handlePrintPdfReceipt({ type: 'debt-statement', customer })} areValuesHidden={areValuesHidden} />;
             case 'DESPESAS': return <DespesasView expenses={expenses} onAddExpense={handleAddExpense} onDeleteExpense={handleDeleteExpense} areValuesHidden={areValuesHidden} />;
             case 'ROTAS': return <RotasView customers={customers} />;
             case 'RELATORIOS': return <RelatoriosView customers={customers} billings={billings} expenses={expenses} debtPayments={debtPayments} areValuesHidden={areValuesHidden} showNotification={showNotification} />;
             case 'CONFIGURACOES': return <ConfiguracoesView userProfile={userProfile} onUpdateUserProfile={handleUpdateUserProfile} onExportData={handleExportData} onMergeData={handleMergeData} theme={theme} setTheme={setTheme} showNotification={showNotification} deferredPrompt={deferredPrompt} onInstallPrompt={handleInstallPrompt} onDeleteAllData={() => setIsDeleteAllDataModalOpen(true)} onLogout={handleLogout} onSwitchAccount={handleSwitchAccount} onAddNewAccount={handleAddNewAccount} isPrivacyModeEnabled={isPrivacyModeEnabled} onActivatePrivacyMode={handleActivatePrivacyMode} onDeactivatePrivacyMode={handleDeactivatePrivacyMode} />;
-            default: return <DashboardView billings={billings} expenses={expenses} customers={customers} debtPayments={debtPayments} warnings={warnings} onAddWarning={handleAddWarning} onResolveWarning={handleResolveWarning} onDeleteWarning={handleDeleteWarning} lastBackupDate={lastBackupTimestamp} onNavigateToSettings={() => setView('CONFIGURACOES')} areValuesHidden={areValuesHidden} deletedCustomersLog={deletedCustomersLog} />;
+            default: return <DashboardView billings={billings} expenses={expenses} customers={customers} debtPayments={debtPayments} warnings={warnings} onAddWarning={handleAddWarning} onResolveWarning={handleResolveWarning} onDeleteWarning={handleDeleteWarning} lastBackupDate={lastBackupTimestamp} onExportData={handleExportData} onNavigateToSettings={() => setView('CONFIGURACOES')} areValuesHidden={areValuesHidden} deletedCustomersLog={deletedCustomersLog} />;
         }
     };
 
     return (
-        <div className="flex h-full">
+        <div className="flex h-full w-full overflow-hidden">
             <Sidebar user={user} currentView={currentView} setView={setView} isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} onOpenFastBilling={() => setIsFastBillingModalOpen(true)} />
-            <div className="flex-1 flex flex-col h-full">
+            <div className="flex-1 flex flex-col h-full min-w-0">
                  <MobileHeader 
                     title={viewTitles[currentView]} 
                     onMenuClick={() => setIsSidebarOpen(true)} 
@@ -1568,7 +1612,7 @@ const App: React.FC = () => {
                     isPrivacyUnlocked={isPrivacyUnlocked} 
                     onToggleLock={handleToggleLock}
                  />
-                <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 bg-slate-100 dark:bg-slate-900 pb-24 md:pb-8 pt-24 md:pt-8">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 bg-slate-100 dark:bg-slate-900 pb-24 md:pb-8 pt-24 md:pt-8 w-full">
                     {renderActiveView()}
                 </main>
             </div>
@@ -1576,6 +1620,8 @@ const App: React.FC = () => {
             <BottomNavBar currentView={currentView} setView={setView} />
             {isInstallBannerVisible && deferredPrompt && <InstallPwaBanner onInstall={handleInstallPrompt} onDismiss={() => setIsInstallBannerVisible(false)} />}
             
+            <SyncStatusIndicator status={syncStatus} onSync={syncData} count={pendingSyncCount} lastSyncedCount={lastSyncedCount} />
+
             {/* All Modals & Overlays */}
             {billingModalState.isOpen && billingModalState.customer && billingModalState.equipment && <BillingModal isOpen={billingModalState.isOpen} onClose={() => setBillingModalState({ isOpen: false, customer: null, equipment: null })} onConfirm={handleAddBilling} customer={billingModalState.customer} equipment={billingModalState.equipment} onTriggerProvisionalReceiptAction={handleTriggerProvisionalReceiptAction} />}
             {editCustomerModalState.isOpen && editCustomerModalState.customer && <EditCustomerModal isOpen={editCustomerModalState.isOpen} onClose={() => setEditCustomerModalState({ isOpen: false, customer: null })} onConfirm={handleUpdateCustomer} customer={editCustomerModalState.customer} customers={customers} isSaving={isSaving} showNotification={showNotification} areValuesHidden={areValuesHidden} />}
@@ -1633,7 +1679,7 @@ const App: React.FC = () => {
             {privacyPinModalState.isOpen && <PrivacyPinModal isOpen={privacyPinModalState.isOpen} mode={privacyPinModalState.mode} title={privacyPinModalState.title} error={privacyPinModalState.error} onConfirm={privacyPinModalState.onConfirm} onClose={() => setPrivacyPinModalState(prev => ({ ...prev, isOpen: false, error: '' }))} />}
             {isRouteCreationModalOpen && <RouteCreationModal isOpen={isRouteCreationModalOpen} onClose={() => setIsRouteCreationModalOpen(false)} customers={customers} onConfirm={handleSaveRoute} isSaving={isSaving} />}
             {printableCustomerSheet && <PrintableCustomerSheetView customer={printableCustomerSheet} onCancel={() => setPrintableCustomerSheet(null)} showNotification={showNotification} />}
-            {actionFeedbackState.isOpen && <ActionFeedbackOverlay isOpen={actionFeedbackState.isOpen} onEnd={handleAnimationEnd} variant={actionFeedbackState.variant} message={actionFeedbackState.message} />}
+            {actionFeedbackState.isOpen && <ActionFeedbackOverlay isOpen={actionFeedbackState.isOpen} onEnd={handleAnimationEnd} variant={actionFeedbackState.variant} message={!isOnline && actionFeedbackState.message && !actionFeedbackState.message.toLowerCase().includes('offline') ? `${actionFeedbackState.message} (Offline)` : actionFeedbackState.message} />}
         </div>
     );
 };

@@ -87,13 +87,13 @@ const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({ isOpen, onClose, on
       aria-modal="true"
       aria-labelledby="debt-modal-title"
     >
-      <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md border border-slate-700 animate-fade-in-up">
-        <header className="p-5 border-b border-slate-700">
+      <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md border border-slate-700 animate-fade-in-up flex flex-col max-h-[90vh]">
+        <header className="p-5 border-b border-slate-700 flex-shrink-0">
           <h2 id="debt-modal-title" className="text-xl font-bold text-white">{isAddingDebt ? 'Adicionar Dívida Avulsa' : 'Pagar Dívida'}</h2>
           <p className="text-sm text-slate-400 break-words">Cliente: {customer.name}</p>
         </header>
         
-        <main className="p-5 space-y-6">
+        <main className="p-5 space-y-6 overflow-y-auto flex-grow">
             <div className="text-center">
                 <p className="text-sm text-slate-400">Dívida Atual</p>
                 <p className={`text-3xl font-mono font-bold ${hasDebt ? 'text-red-400' : 'text-slate-400'}`}>
@@ -152,7 +152,7 @@ const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({ isOpen, onClose, on
              {error && <p className="text-red-400 text-xs mt-2 text-center font-medium">{error}</p>}
         </main>
 
-        <footer className="p-4 bg-slate-800/50 rounded-b-lg flex flex-col gap-3">
+        <footer className="p-4 bg-slate-800/50 rounded-b-lg flex flex-col gap-3 flex-shrink-0">
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row-reverse gap-3">
               <button 

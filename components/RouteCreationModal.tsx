@@ -50,12 +50,12 @@ const RouteCreationModal: React.FC<RouteCreationModalProps> = ({ isOpen, onClose
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
       <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-lg border border-slate-700 animate-fade-in-up max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-slate-700">
+        <div className="p-6 border-b border-slate-700 flex-shrink-0">
           <h2 className="text-xl font-bold text-white">Criar Nova Rota</h2>
           <p className="text-slate-400 mt-1">Selecione os clientes com localização salva para otimizar e salvar uma rota de visita.</p>
         </div>
         
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 flex-shrink-0">
             <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">Nome da Rota</label>
                 <input
@@ -78,7 +78,7 @@ const RouteCreationModal: React.FC<RouteCreationModalProps> = ({ isOpen, onClose
             </div>
         </div>
 
-        <div className="px-6 py-2 border-b border-t border-slate-700 flex justify-between items-center">
+        <div className="px-6 py-2 border-b border-t border-slate-700 flex justify-between items-center flex-shrink-0">
             <div className="flex items-center">
                 <input type="checkbox" id="select-all-route" checked={selectedIds.size === geocodedCustomers.length && geocodedCustomers.length > 0} onChange={handleSelectAll} className="h-4 w-4 rounded border-slate-500 text-lime-600 bg-slate-700 focus:ring-lime-500" />
                 <label htmlFor="select-all-route" className="ml-2 text-sm font-medium text-slate-300">Selecionar todos ({selectedIds.size}/{geocodedCustomers.length})</label>
@@ -99,7 +99,7 @@ const RouteCreationModal: React.FC<RouteCreationModalProps> = ({ isOpen, onClose
             </ul>
         </div>
 
-        <div className="p-6 mt-auto bg-slate-800/50 rounded-b-lg flex justify-end gap-4 border-t border-slate-700">
+        <div className="p-6 mt-auto bg-slate-800/50 rounded-b-lg flex justify-end gap-4 border-t border-slate-700 flex-shrink-0">
           <button onClick={onClose} className="bg-slate-600 text-white font-bold py-2 px-6 rounded-md hover:bg-slate-500">Cancelar</button>
           <button onClick={handleConfirm} disabled={isSaving || !routeName.trim() || selectedIds.size === 0} className="inline-flex items-center gap-2 bg-lime-600 text-white font-bold py-2 px-6 rounded-md hover:bg-lime-500 disabled:bg-slate-500 disabled:cursor-not-allowed">
             <RulerIcon className="w-5 h-5" />

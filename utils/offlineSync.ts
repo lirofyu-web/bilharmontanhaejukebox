@@ -34,6 +34,17 @@ const getDb = (): Promise<IDBDatabase> => {
   return dbPromise;
 };
 
+export const getPendingMutationsCount = async (): Promise<number> => {
+  const dbInstance = await getDb();
+  const transaction = dbInstance.transaction(STORE_NAME, 'readonly');
+  const store = transaction.objectStore(STORE_NAME);
+  return new Promise<number>((resolve, reject) => {
+    const request = store.count();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = (e) => reject((e.target as any).error);
+  });
+};
+
 export const queueMutation = async (mutation: QueuedMutation): Promise<void> => {
     const dbInstance = await getDb();
     const transaction = dbInstance.transaction(STORE_NAME, 'readwrite');
@@ -41,7 +52,12 @@ export const queueMutation = async (mutation: QueuedMutation): Promise<void> => 
     
     await new Promise<void>((resolve, reject) => {
         const request = store.add(mutation);
-        request.onsuccess = () => resolve();
+        request.onsuccess = () => {
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new Event('offline-mutation-queued'));
+            }
+            resolve();
+        };
         request.onerror = (event) => reject(new Error(`Failed to queue mutation: ${(event.target as any).error}`));
     });
 };
@@ -77,7 +93,12 @@ export const clearOfflineQueue = async (): Promise<void> => {
   const store = transaction.objectStore(STORE_NAME);
   await new Promise<void>((resolve, reject) => {
     const request = store.clear();
-    request.onsuccess = () => resolve();
+    request.onsuccess = () => {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('offline-queue-cleared'));
+        }
+        resolve();
+    };
     request.onerror = (e) => reject((e.target as any).error);
   });
 };
@@ -104,8 +125,10 @@ export const processSyncQueue = async (currentUserId: string | null): Promise<nu
     for (let i = 0; i < mutations.length; i += chunkSize) {
         const chunk = mutations.slice(i, i + chunkSize);
         const batch = writeBatch(db);
+        const processedIds: number[] = [];
 
         chunk.forEach((mutation) => {
+          if (mutation.id) processedIds.push(mutation.id);
           const userIdForPath = mutation.targetUserId || currentUserId;
           const collectionPath = `users/${userIdForPath}/${mutation.collectionPath}`;
           let docRef;
@@ -131,9 +154,23 @@ export const processSyncQueue = async (currentUserId: string | null): Promise<nu
         });
 
         await batch.commit();
+        
+        // Remove only the processed mutations from IndexedDB correctly
+        const dbInstance2 = await getDb();
+        const deleteTx = dbInstance2.transaction(STORE_NAME, 'readwrite');
+        const deleteStore = deleteTx.objectStore(STORE_NAME);
+        for (const id of processedIds) {
+            deleteStore.delete(id);
+        }
+        await new Promise<void>((resolve, reject) => {
+            deleteTx.oncomplete = () => resolve();
+            deleteTx.onerror = () => reject(deleteTx.error);
+        });
     }
 
-    await clearOfflineQueue();
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('offline-queue-cleared'));
+    }
     
     return mutations.length;
   } catch (error) {

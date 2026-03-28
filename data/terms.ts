@@ -14,7 +14,7 @@ export const TERMS_CLAUSES = [
     },
     {
         title: "4. CONDIÇÕES FINANCEIRAS",
-        content: "O pagamento será realizado conforme o modelo de faturamento acordado (mensalidade fixa ou porcentagem sobre a receita), nas datas estipuladas. O atraso no pagamento acarretará multa e juros."
+        content: "O pagamento será realizado conforme o modelo de COBRANÇA acordado (mensalidade fixa ou porcentagem sobre a receita), nas datas estipuladas. O atraso no pagamento acarretará multa e juros."
     },
     {
         title: "5. REAJUSTE",

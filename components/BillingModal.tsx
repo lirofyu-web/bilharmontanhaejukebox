@@ -712,7 +712,7 @@ const BillingModal: React.FC<BillingModalProps> = ({ isOpen, onClose, onConfirm,
         <div className="p-6 border-b border-slate-700 flex justify-between items-start">
             <div>
                 <h2 id="billing-modal-title" className="text-2xl font-bold text-white capitalize">
-                    Faturamento {equipment.type} {isGrua ? `(Etapa ${gruaStep}/4)` : ''}
+                    COBRANÇA {equipment.type} {isGrua ? `(Etapa ${gruaStep}/4)` : ''}
                 </h2>
                 <p className="text-slate-400 break-words">{customer.name} - {equipment.type} {equipment.numero}</p>
             </div>

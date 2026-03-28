@@ -1,7 +1,7 @@
 // firebase.ts
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-import { getFirestore, Timestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { getFirestore, Timestamp, enableMultiTabIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
 // Configuração do Firebase para o projeto Montanha Gestão.
 const firebaseConfig = {
@@ -18,6 +18,15 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// Habilita persistência offline do Firestore
+enableMultiTabIndexedDbPersistence(db).catch((err) => {
+  if (err.code == 'failed-precondition') {
+    console.warn("Firebase Persistence: Múltiplas abas abertas, o cache offline funcionará apenas nesta aba inicial.");
+  } else if (err.code == 'unimplemented') {
+    console.warn("Firebase Persistence: O navegador atual não suporta persistência offline.");
+  }
+});
 
 /**
  * Converte um documento do Firestore, incluindo seu ID e transformando Timestamps em Dates.

@@ -172,10 +172,10 @@ const CustomerCard: React.FC<CustomerCardProps> = ({ customer, billings, onBill,
                         <ActionButton
                             onClick={handleBillingAction}
                             icon={<ReceiptIcon className="w-5 h-5" />}
-                            label={pendingBilling ? (customer.equipment?.length > 1 ? "Opções" : "Finalizar") : "Faturar"}
+                            label={pendingBilling ? (customer.equipment?.length > 1 ? "Opções" : "Finalizar") : "COBRAR"}
                             colorClass={pendingBilling ? "bg-lime-500" : "bg-yellow-500"}
                             pulse={!!pendingBilling}
-                            title={pendingBilling ? `Ações para pagamento pendente` : "Faturar novo equipamento"}
+                            title={pendingBilling ? `Ações para pagamento pendente` : "Cobrar novo equipamento"}
                         />
                         <ActionButton onClick={() => onEdit(customer)} icon={<PencilIcon className="w-5 h-5" />} label="Editar" colorClass="bg-sky-600" title='Editar Cliente' />
                         <ActionButton 

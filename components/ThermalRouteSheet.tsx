@@ -4,26 +4,13 @@ import React from 'react';
 import { Customer } from '../types';
 
 interface ThermalRouteSheetProps {
-  customers: Customer[];
+  customersByCity: Record<string, Customer[]>;
+  sortedCities: string[];
   isOptimized: boolean;
 }
 
-const ThermalRouteSheet: React.FC<ThermalRouteSheetProps> = ({ customers, isOptimized }) => {
+const ThermalRouteSheet: React.FC<ThermalRouteSheetProps> = ({ customersByCity, sortedCities, isOptimized }) => {
     const printDate = new Date().toLocaleDateString('pt-BR');
-
-    const customersByCity = customers.reduce((acc, customer) => {
-        const city = customer.cidade.trim() || 'Sem Cidade';
-        if (!acc[city]) {
-            acc[city] = [];
-        }
-        acc[city].push(customer);
-        return acc;
-    }, {} as Record<string, Customer[]>);
-
-    const sortedCities = isOptimized ? ['Rota Otimizada'] : Object.keys(customersByCity).sort();
-    if(isOptimized) {
-        customersByCity['Rota Otimizada'] = customers;
-    }
 
     return (
         <div className="bg-white text-black p-2 font-mono text-base" style={{ width: '80mm' }}>
@@ -33,9 +20,14 @@ const ThermalRouteSheet: React.FC<ThermalRouteSheetProps> = ({ customers, isOpti
                 <p className="text-base">Data: {printDate}</p>
             </div>
 
-            {sortedCities.map(city => (
+            {sortedCities.map(city => {
+                if (!customersByCity[city] || customersByCity[city].length === 0) return null;
+                const showHeader = !isOptimized || city === 'Sem Localização Salva';
+                const showIndexNumber = city === 'Rota Otimizada';
+
+                return (
                 <div key={city}>
-                    {!isOptimized && (
+                    {showHeader && (
                          <>
                             <div className="border-t-2 border-dashed border-black my-2"></div>
                             <h3 className="font-bold text-center text-lg uppercase">{city}</h3>
@@ -52,7 +44,7 @@ const ThermalRouteSheet: React.FC<ThermalRouteSheetProps> = ({ customers, isOpti
                         return (
                             <div key={customer.id} className="py-1 border-b border-dotted border-gray-400">
                                 <div className="flex items-start gap-2">
-                                    <span className="font-bold pt-0.5">{isOptimized ? `${index + 1}.` : '•'}</span>
+                                    <span className="font-bold pt-0.5">{showIndexNumber ? `${index + 1}.` : '•'}</span>
                                     <div className="flex-grow">
                                         <p className="font-bold uppercase text-lg">{customer.name}</p>
                                         <p className="text-base">{customer.endereco}</p>
@@ -76,7 +68,8 @@ const ThermalRouteSheet: React.FC<ThermalRouteSheetProps> = ({ customers, isOpti
                         );
                     })}
                 </div>
-            ))}
+                );
+            })}
              <div className="mt-4 text-center text-base">
                 <p>-- Fim da Rota --</p>
             </div>

@@ -98,7 +98,7 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({ billings, expenses 
         ))}
       </svg>
       <div className="flex justify-center gap-4 mt-2 text-sm">
-          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500"></div><span className="text-slate-300">Faturamento</span></div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500"></div><span className="text-slate-300">COBRANÇA</span></div>
           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500"></div><span className="text-slate-300">Despesas</span></div>
       </div>
     </div>

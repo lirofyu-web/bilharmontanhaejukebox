@@ -25,6 +25,20 @@ export interface Equipment {
     numero: string;
     relogioAnterior: number;
     valorFicha: number;
+    billingType?: 'perPlay' | 'monthly';
+    monthlyFeeValue?: number;
+    parteFirma?: number;
+    parteCliente?: number;
+    relogioNumero?: string;
+    aluguelPercentual?: number | null;
+    aluguelValor?: number;
+    saldo?: number;
+    reposicaoPelucia?: number;
+    recebimentoEspecie?: number;
+    recebimentoPix?: number;
+    porcentagemJukeboxFirma?: number;
+    porcentagemJukeboxCliente?: number;
+    quantidadePelucia?: number;
 }
 
 export interface Billing {
@@ -35,21 +49,40 @@ export interface Billing {
     equipmentType: 'mesa' | 'jukebox' | 'grua';
     relogioAnterior: number;
     relogioAtual: number;
-    totalFichas: number;
-    valorFicha: number;
-    totalBruto: number;
-    comissaoPercentual: number;
-    valorComissao: number;
-    totalLiquido: number;
-    valorRecebido: number;
-    valorDebitoAdicionado: number;
-    valorDebitoNegativo: number;
-    paymentMethod: 'dinheiro' | 'pix' | 'cartao' | 'misto' | 'pending_payment';
+    totalFichas?: number;
+    valorFicha?: number;
+    totalBruto?: number;
+    comissaoPercentual?: number;
+    valorComissao?: number;
+    totalLiquido?: number;
+    valorRecebido?: number;
+    valorDebitoAdicionado?: number;
+    valorDebitoNegativo?: number;
+    paymentMethod: 'dinheiro' | 'pix' | 'cartao' | 'misto' | 'pending_payment' | 'debito_negativo';
     amountPaidDinheiro?: number;
     amountPaidPix?: number;
     amountPaidCartao?: number;
     settledAt: Date;
     observacao?: string;
+    valorTotal: number;
+    valorBonus?: number;
+    partidasJogadas?: number;
+    valorPagoDinheiro?: number;
+    valorPagoPix?: number;
+    parteFirma?: number;
+    parteCliente?: number;
+    valorBruto?: number;
+    descontoPartidas?: number;
+    partidasCobradas?: number;
+    aluguelPercentual?: number | null;
+    aluguelValor?: number;
+    saldo?: number;
+    recebimentoEspecie?: number;
+    recebimentoPix?: number;
+    sobraPelucia?: number;
+    reposicaoPelucia?: number;
+    quantidadePelucia?: number;
+    equipmentNumero?: string;
 }
 
 export interface Expense {
