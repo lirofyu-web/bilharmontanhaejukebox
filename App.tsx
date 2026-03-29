@@ -230,39 +230,6 @@ const App: React.FC = () => {
         };
     }, []);
 
-    // --- Native Network Monitoring ---
-    useEffect(() => {
-        let handler: any;
-        
-        const setupNetwork = async () => {
-            if (Capacitor.isNativePlatform()) {
-                const status = await Network.getStatus();
-                setIsOnline(status.connected);
-                if (!status.connected) {
-                    setSyncStatus('offline');
-                }
-
-                handler = await Network.addListener('networkStatusChange', status => {
-                    setIsOnline(status.connected);
-                    if (status.connected) {
-                        showNotification('Conexão reestabelecida. Sincronizando...', 'success');
-                        syncData();
-                    } else {
-                        setSyncStatus('offline');
-                        showNotification('Você está offline. As alterações serão salvas localmente.', 'success');
-                    }
-                });
-            }
-        };
-
-        setupNetwork();
-        return () => {
-            if (handler) {
-                handler.remove();
-            }
-        };
-    }, [syncData, showNotification]);
-
     // --- Fullscreen Mode on First Interaction (Web Fallback) ---
     useEffect(() => {
         if (Capacitor.isNativePlatform()) return; // Capacitor handles this above
@@ -462,6 +429,38 @@ const App: React.FC = () => {
         };
     }, [isOnline, syncData, showNotification]);
 
+    // --- Native Network Monitoring ---
+    useEffect(() => {
+        let handler: any;
+        
+        const setupNetwork = async () => {
+            if (Capacitor.isNativePlatform()) {
+                const status = await Network.getStatus();
+                setIsOnline(status.connected);
+                if (!status.connected) {
+                    setSyncStatus('offline');
+                }
+
+                handler = await Network.addListener('networkStatusChange', status => {
+                    setIsOnline(status.connected);
+                    if (status.connected) {
+                        showNotification('Conexão reestabelecida. Sincronizando...', 'success');
+                        syncData();
+                    } else {
+                        setSyncStatus('offline');
+                        showNotification('Você está offline. As alterações serão salvas localmente.', 'success');
+                    }
+                });
+            }
+        };
+
+        setupNetwork();
+        return () => {
+            if (handler) {
+                handler.remove();
+            }
+        };
+    }, [syncData, showNotification]);
 
     // --- Firebase Auth & Data Sync Effects ---
     const handleLoginSuccess = useCallback((email: string, password?: string, rememberMe?: boolean) => {
