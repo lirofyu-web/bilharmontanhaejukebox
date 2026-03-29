@@ -7,14 +7,15 @@ import { Printer } from '@capgo/capacitor-printer';
  * On Web, it falls back to standard behavior.
  */
 export const nativePrintPDF = async (content: string, fileName: string): Promise<void> => {
+  const trimmedContent = content.trim();
   if (Capacitor.isNativePlatform()) {
     try {
-      if (content.startsWith('<html>') || content.startsWith('<!DOCTYPE')) {
-        await Printer.printHtml({ html: content, name: fileName });
-      } else if (content.startsWith('JVBERi') || content.match(/^[A-Za-z0-9+/=]+$/)) { // PDF base64 magic bytes
-        await Printer.printBase64({ data: content, mimeType: 'application/pdf', name: fileName });
+      if (trimmedContent.startsWith('<html>') || trimmedContent.startsWith('<!DOCTYPE')) {
+        await Printer.printHtml({ html: trimmedContent, name: fileName });
+      } else if (trimmedContent.startsWith('JVBERi') || trimmedContent.match(/^[A-Za-z0-9+/=]+$/)) { // PDF base64 magic bytes
+        await Printer.printBase64({ data: trimmedContent, mimeType: 'application/pdf', name: fileName });
       } else {
-        await Printer.printPdf({ path: content, name: fileName });
+        await Printer.printPdf({ path: trimmedContent, name: fileName });
       }
       return;
     } catch (error) {
@@ -23,17 +24,17 @@ export const nativePrintPDF = async (content: string, fileName: string): Promise
     }
   } else {
     // Web fallback
-    if (content.startsWith('<html>') || content.startsWith('<!DOCTYPE')) {
+    if (trimmedContent.startsWith('<html>') || trimmedContent.startsWith('<!DOCTYPE')) {
         const printWindow = window.open('', '', 'height=800,width=400');
         if (printWindow) {
-            printWindow.document.write(content);
+            printWindow.document.write(trimmedContent);
             printWindow.document.close();
             printWindow.focus();
             setTimeout(() => { printWindow.print(); }, 500);
         }
-    } else if (content.startsWith('JVBERi') || content.match(/^[A-Za-z0-9+/=]+$/)) {
+    } else if (trimmedContent.startsWith('JVBERi') || trimmedContent.match(/^[A-Za-z0-9+/=]+$/)) {
         // Fallback for base64 in web (create a blob)
-        const byteCharacters = atob(content);
+        const byteCharacters = atob(trimmedContent);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
         const byteArray = new Uint8Array(byteNumbers);
@@ -42,7 +43,7 @@ export const nativePrintPDF = async (content: string, fileName: string): Promise
         window.open(url, '_blank');
         setTimeout(() => URL.revokeObjectURL(url), 5000);
     } else {
-        window.open(content, '_blank');
+        window.open(trimmedContent, '_blank');
     }
   }
 };
