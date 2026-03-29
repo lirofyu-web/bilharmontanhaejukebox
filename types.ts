@@ -1,5 +1,5 @@
 
-import { Timestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { Timestamp } from "firebase/firestore";
 
 export interface Customer {
     id: string;

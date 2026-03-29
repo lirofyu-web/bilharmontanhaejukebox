@@ -1,7 +1,7 @@
 // firebase.ts
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-import { getFirestore, Timestamp, enableMultiTabIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore, Timestamp, enableMultiTabIndexedDbPersistence } from "firebase/firestore";
 
 // Configuração do Firebase para o projeto Montanha Gestão.
 const firebaseConfig = {

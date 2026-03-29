@@ -1,9 +1,7 @@
 // views/LoginView.tsx
 import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
-import {
-  signInWithEmailAndPassword,
-} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { LogoIcon } from '../components/icons/LogoIcon';
 import { UserIcon } from '../components/icons/UserIcon';
 import { SavedUser } from '../types';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { User } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { User } from "firebase/auth";
 import { View } from '../types';
 import { HomeIcon, UsersIcon, ReceiptIcon, CalculatorIcon, ChartBarIcon, MapIcon, CogIcon, BilliardIcon, ArrowsPointingOutIcon } from './icons';
 import AppLogo from './AppLogo';
