@@ -60,17 +60,19 @@ export const exportElementAsPDF = (element: HTMLElement, fileName: string): Prom
       doc.addImage(imgData, 'PNG', x, y, finalImgWidth, finalImgHeight);
 
       const pdfBlob = doc.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
       
       try {
-        await nativePrintPDF(pdfUrl, fileName);
-        if (!Capacitor.isNativePlatform()) {
-           // For Web, revoke after delay
+        if (Capacitor.isNativePlatform()) {
+           const dataUri = doc.output('datauristring');
+           const pdfBase64 = dataUri.split(',')[1];
+           await nativePrintPDF(pdfBase64, fileName);
+        } else {
+           const pdfUrl = URL.createObjectURL(pdfBlob);
+           await nativePrintPDF(pdfUrl, fileName);
            setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000);
         }
         resolve();
       } catch (err) {
-        URL.revokeObjectURL(pdfUrl);
         reject(err instanceof Error ? err : new Error("Falha ao imprimir o PDF."));
       }
 
