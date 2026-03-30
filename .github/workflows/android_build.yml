@@ -45,8 +45,28 @@ jobs:
           chmod +x gradlew
           ./gradlew clean assembleDebug --info -Pandroid.incremental=false
 
-      - name: Upload APK
+      - name: Rename APK
+        run: mv android/app/build/outputs/apk/debug/app-debug.apk BilharMontanhaeJukebox.apk
+
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: BilharMontanhaeJukebox-APK
+          path: BilharMontanhaeJukebox.apk
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        with:
+          tag_name: latest
+          name: Versão Atualizada (APK)
+          body: |
+            Nova versão gerada automaticamente em ${{ github.event.head_commit.timestamp }}.
+            Commmit: ${{ github.sha }}
+            
+            **Dica:** Baixe o arquivo `.apk` abaixo para instalar no seu Android.
+          files: BilharMontanhaeJukebox.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
