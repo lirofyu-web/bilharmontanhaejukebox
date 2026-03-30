@@ -11,6 +11,7 @@ import { queueMutation, processSyncQueue, clearOfflineQueue, processPayloadForFi
 import { v4 as uuidv4 } from 'uuid';
 import { Capacitor } from '@capacitor/core';
 import { Network } from '@capacitor/network';
+import { Geolocation } from '@capacitor/geolocation';
 
 import Sidebar from './components/Sidebar';
 import DashboardView from './views/DashboardView';
@@ -1208,8 +1209,9 @@ const App: React.FC = () => {
         setIsRouteCreationModalOpen(false);
     
         try {
-            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
+            const position = await Geolocation.getCurrentPosition({
+                enableHighAccuracy: true,
+                timeout: 15000
             });
             
             const { latitude, longitude } = position.coords;
@@ -1240,11 +1242,13 @@ const App: React.FC = () => {
             playSuccessSound();
             setActionFeedbackState({ isOpen: true, variant: 'success', message: 'Rota Salva!' });
     
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error creating route:", error);
             let message = 'Erro ao criar a rota.';
-            if (error instanceof GeolocationPositionError && error.code === 1) {
-                message = 'Permissão de localização negada. A rota não pode ser otimizada.';
+            if (error.code === 1 || error.message?.toLowerCase().includes("denied")) {
+                message = 'Permissão de localização negada. Verifique as configurações do GPS.';
+            } else if (error.message?.toLowerCase().includes("timeout")) {
+                message = "Tempo esgotado ao buscar localização.";
             }
             showNotification(message, "error");
         } finally {
@@ -1347,20 +1351,25 @@ const App: React.FC = () => {
         }
         setIsGeolocating(true);
         setSaveLocationModalState({ isOpen: false, customer: null });
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                handleUpdateCustomerPartial({ id: customer.id, latitude, longitude });
-                setIsGeolocating(false);
-            },
-            (error) => {
-                let message = "Erro ao obter localização.";
-                if (error.code === 1) message = "Permissão de localização negada.";
-                showNotification(message, "error");
-                setIsGeolocating(false);
-            },
-            { enableHighAccuracy: true }
-        );
+        try {
+            const position = await Geolocation.getCurrentPosition({
+                enableHighAccuracy: true,
+                timeout: 10000
+            });
+            const { latitude, longitude } = position.coords;
+            handleUpdateCustomerPartial({ id: customer.id, latitude, longitude });
+            showNotification("Localização salva com sucesso!", "success");
+        } catch (error: any) {
+            let message = "Erro ao obter localização.";
+            if (error.code === 1 || error.message?.toLowerCase().includes("denied")) {
+                message = "Permissão de localização negada pelo sistema.";
+            } else if (error.message?.toLowerCase().includes("timeout")) {
+                message = "Tempo esgotado ao buscar localização.";
+            }
+            showNotification(message, "error");
+        } finally {
+            setIsGeolocating(false);
+        }
     }, [handleUpdateCustomerPartial, showNotification]);
     
     const handleWhatsAppActions = useCallback((customer: Customer) => {

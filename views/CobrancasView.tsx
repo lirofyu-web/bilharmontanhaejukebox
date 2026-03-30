@@ -12,6 +12,7 @@ import { PencilIcon } from '../components/icons/PencilIcon';
 import ActionModal from '../components/ActionModal';
 import { CurrencyDollarIcon } from '../components/icons/CurrencyDollarIcon';
 import { ListBulletIcon } from '../components/icons/ListBulletIcon';
+import { nativePrintPDF } from '../utils/nativePrint';
 
 interface CobrancasViewProps {
     billings: Billing[];
@@ -399,7 +400,7 @@ const CobrancasView: React.FC<CobrancasViewProps> = ({
         return { debtorCustomers: debtors, totalDebt: debt };
     }, [customers]);
     
-    const handlePrintDebtors = useCallback(() => {
+    const handlePrintDebtors = useCallback(async () => {
         const typeMap: Record<string, string> = { mesa: 'M. Sinuca', jukebox: 'Jukebox', grua: 'Grua' };
         const debtOrigins = new Map<string, Set<string>>();
         billings.forEach(b => {
@@ -458,13 +459,8 @@ const CobrancasView: React.FC<CobrancasViewProps> = ({
                 </body>
             </html>
         `;
-        const printWindow = window.open('', '', 'height=800,width=1000');
-        if (printWindow) {
-            printWindow.document.write(reportHtml);
-            printWindow.document.close();
-            printWindow.focus();
-            printWindow.print();
-        }
+        
+        nativePrintPDF(reportHtml, `Relatório de Devedores - ${new Date().toLocaleDateString('pt-BR')}`);
     }, [debtorCustomers, totalDebt, billings]);
 
     const handleConfirmDelete = () => {

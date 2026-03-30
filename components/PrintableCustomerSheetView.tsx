@@ -6,6 +6,7 @@ import { DownloadIcon } from './icons/DownloadIcon';
 import { XIcon } from './icons/XIcon';
 import { DocumentDuplicateIcon } from './icons/DocumentDuplicateIcon';
 import { exportElementAsPDF } from '../utils/pdfGenerator';
+import { nativePrintPDF } from '../utils/nativePrint';
 
 interface PrintableCustomerSheetViewProps {
   customer: Customer;
@@ -25,15 +26,13 @@ const PrintableCustomerSheetView: React.FC<PrintableCustomerSheetViewProps> = ({
     }
   }, [customer]);
 
-  const handlePrint = useCallback(() => {
+  const handlePrint = useCallback(async () => {
     if (!sheetHtml) {
       showNotification('Conteúdo não encontrado para impressão.', 'error');
       return;
     }
 
-    const printWindow = window.open('', '', 'height=800,width=1000');
-    if (printWindow) {
-      printWindow.document.write(`
+    const fullHtml = `
         <html>
           <head>
             <title>Ficha de Cadastro - ${customer.name}</title>
@@ -47,16 +46,15 @@ const PrintableCustomerSheetView: React.FC<PrintableCustomerSheetViewProps> = ({
           </head>
           <body>
             ${sheetHtml}
-            <script>
-              setTimeout(() => { window.print(); }, 500);
-            </script>
           </body>
         </html>
-      `);
-      printWindow.document.close();
-      printWindow.focus();
-    } else {
-      showNotification('Por favor, habilite pop-ups para imprimir.', 'error');
+      `;
+
+    try {
+        await nativePrintPDF(fullHtml, `Ficha - ${customer.name}`);
+    } catch (err) {
+        console.error("Print error:", err);
+        showNotification('Erro ao abrir gerenciador de impressão.', 'error');
     }
   }, [sheetHtml, customer.name, showNotification]);
 

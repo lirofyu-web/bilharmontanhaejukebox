@@ -5,6 +5,7 @@ import BillingSlipSheet from './BillingSlipSheet';
 import ThermalBillingSlip from './ThermalBillingSlip';
 import { DocumentDuplicateIcon, PrinterIcon } from './icons';
 import { Customer, Equipment } from '../types';
+import { nativePrintPDF } from '../utils/nativePrint';
 
 interface PrintableSlipsModalProps {
   slips: { customer: Customer; equipment: Equipment; lastBillingAmount: number | null; }[];
@@ -15,58 +16,55 @@ const PrintableSlipsModal: React.FC<PrintableSlipsModalProps> = ({ slips, onClos
   const printAreaRef = useRef<HTMLDivElement>(null);
   const [isThermalView, setThermalView] = useState(false);
 
-  const handlePrint = (thermal: boolean) => {
+  const handlePrint = async (thermal: boolean) => {
     // Atraso para garantir que a visualização seja atualizada antes da impressão
-    setTimeout(() => {
-        setThermalView(thermal);
-        setTimeout(() => {
-            const printContent = printAreaRef.current?.innerHTML;
-            if (!printContent) {
-                alert("Não foi possível encontrar o conteúdo para impressão.");
-                return;
-            }
+    setThermalView(thermal);
+    
+    // Pequeno atraso para garantir o re-render
+    setTimeout(async () => {
+        const printContent = printAreaRef.current?.innerHTML;
+        if (!printContent) {
+            alert("Não foi possível encontrar o conteúdo para impressão.");
+            return;
+        }
 
-            const printWindow = window.open('', '_blank');
-            if (printWindow) {
-                const title = thermal ? 'Talão Térmico' : 'Talões de Cobrança';
-                const styles = thermal ? `
-                    body { margin: 0; background-color: #808080; display: flex; justify-content: center; }
-                    .thermal-slip { margin: 0 auto; }
-                    @page { size: 80mm auto; margin: 0; }
-                    @media print {
-                        body { background-color: #fff; justify-content: flex-start; }
-                    }
-                ` : `
-                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: #808080; }
-                    .print-page { page-break-after: always; margin: 1rem auto; }
-                    .print-page:last-child { page-break-after: auto; }
-                    @page { size: A4 portrait; margin: 0; }
-                    @media print {
-                        body { background-color: #fff; }
-                        .print-page { margin: 0; box-shadow: none; }
-                    }
-                `;
-
-                printWindow.document.write(`
-                    <html>
-                        <head>
-                            <title>${title}</title>
-                            <script src="https://cdn.tailwindcss.com"></script>
-                            <style>${styles}</style>
-                        </head>
-                        <body><div>${printContent}</div></body>
-                    </html>
-                `);
-                printWindow.document.close();
-                printWindow.focus();
-                setTimeout(() => {
-                    printWindow.print();
-                }, 500);
-            } else {
-                alert("Por favor, habilite pop-ups para impressão.");
+        const title = thermal ? 'Talão Térmico' : 'Talões de Cobrança';
+        const styles = thermal ? `
+            body { margin: 0; background-color: #808080; display: flex; justify-content: center; }
+            .thermal-slip { margin: 0 auto; }
+            @page { size: 80mm auto; margin: 0; }
+            @media print {
+                body { background-color: #fff; justify-content: flex-start; }
             }
-        }, 100);
-    }, 0);
+        ` : `
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: #808080; }
+            .print-page { page-break-after: always; margin: 1rem auto; }
+            .print-page:last-child { page-break-after: auto; }
+            @page { size: A4 portrait; margin: 0; }
+            @media print {
+                body { background-color: #fff; }
+                .print-page { margin: 0; box-shadow: none; }
+            }
+        `;
+
+        const fullHtml = `
+            <html>
+                <head>
+                    <title>${title}</title>
+                    <script src="https://cdn.tailwindcss.com"></script>
+                    <style>${styles}</style>
+                </head>
+                <body><div>${printContent}</div></body>
+            </html>
+        `;
+
+        try {
+            await nativePrintPDF(fullHtml, title);
+        } catch (err) {
+            console.error("Print error:", err);
+            alert("Erro ao imprimir.");
+        }
+    }, 100);
   };
   
   const slipsPerPage = 3;

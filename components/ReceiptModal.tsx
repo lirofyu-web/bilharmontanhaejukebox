@@ -1,7 +1,8 @@
 // components/ReceiptModal.tsx
 import React from 'react';
 import { Billing } from '../types';
-import { generateReceiptText } from '../utils/receiptGenerator';
+import { generateBillingText } from '../utils/receiptGenerator';
+import { nativePrintPDF } from '../utils/nativePrint';
 import { SaveIcon } from './icons/SaveIcon';
 
 interface ReceiptModalProps {
@@ -13,44 +14,34 @@ interface ReceiptModalProps {
 const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, billing }) => {
   if (!isOpen || !billing) return null;
 
-  const receiptContent = generateReceiptText(billing);
+  const receiptContent = generateBillingText(billing, false);
 
-  const handlePrint = () => {
-    const printWindow = window.open('', '', 'height=800,width=1000');
-    if (printWindow) {
-        printWindow.document.write(`
+  const handlePrint = async () => {
+    const fullHtml = `
             <html>
                 <head>
                     <title>Recibo</title>
                     <style>
                         body { font-family: 'Courier New', Courier, monospace; font-size: 12px; margin: 20px; }
                         pre { white-space: pre-wrap; word-wrap: break-word; }
-                        .print-button {
-                            position: fixed;
-                            top: 20px;
-                            right: 20px;
-                            padding: 10px 20px;
-                            background-color: #4CAF50;
-                            color: white;
-                            border: none;
-                            border-radius: 5px;
-                            cursor: pointer;
-                        }
                         @media print {
-                            .print-button {
+                            .no-print {
                                 display: none;
                             }
                         }
                     </style>
                 </head>
                 <body>
-                    <button class="print-button" onclick="window.print()">Imprimir</button>
                     <pre>${receiptContent}</pre>
                 </body>
             </html>
-        `);
-        printWindow.document.close();
-        printWindow.focus();
+        `;
+
+    try {
+        await nativePrintPDF(fullHtml, `Recibo - ${billing.customerName}`);
+    } catch (err) {
+        console.error("Print error:", err);
+        alert("Erro ao imprimir o recibo.");
     }
   };
 

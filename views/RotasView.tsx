@@ -8,6 +8,8 @@ import MapComponent from '../components/MapComponent';
 import ThermalRouteSheet from '../components/ThermalRouteSheet'; // Import the new component
 import { PrinterIcon, DocumentTextIcon, RulerIcon, LocationMarkerIcon, BilliardIcon, JukeboxIcon, CraneIcon, ListBulletIcon, XIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon } from '../components/icons';
 import { optimizeRoute } from '../utils/routeOptimizer';
+import { Geolocation } from '@capacitor/geolocation';
+import { nativePrintPDF } from '../utils/nativePrint';
 
 
 interface RotasViewProps {
@@ -133,27 +135,30 @@ const RotasView: React.FC<RotasViewProps> = ({ customers }) => {
     }
   }, []);
   
-  const handleOptimizeRoute = useCallback(() => {
-    if (!navigator.geolocation) {
-      alert("Geolocalização não é suportada.");
-      return;
-    }
+  const handleOptimizeRoute = useCallback(async () => {
     setIsProcessingRoute(true);
     setOptimizedRoute(null);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        const route = optimizeRoute(latitude, longitude, geocodedCustomers);
-        setOptimizedRoute(route);
-        setIsProcessingRoute(false);
-      },
-      (error) => {
-        alert("Não foi possível obter a localização para otimizar a rota.");
-        console.error(error);
-        setIsProcessingRoute(false);
+    try {
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 15000
+      });
+      const { latitude, longitude } = position.coords;
+      const route = optimizeRoute(latitude, longitude, geocodedCustomers);
+      setOptimizedRoute(route);
+    } catch (error: any) {
+      console.error("Erro na otimização de rota:", error);
+      let message = "Não foi possível obter a localização para otimizar a rota.";
+      if (error.code === 1 || error.message?.toLowerCase().includes("denied")) {
+        message = "Permissão de localização negada. Verifique as configurações do GPS.";
+      } else if (error.message?.toLowerCase().includes("timeout")) {
+        message = "Tempo esgotado ao buscar localização. Tente novamente em local aberto.";
       }
-    );
+      alert(message);
+    } finally {
+      setIsProcessingRoute(false);
+    }
   }, [geocodedCustomers]);
 
   const handleResetRoute = () => {
@@ -161,7 +166,7 @@ const RotasView: React.FC<RotasViewProps> = ({ customers }) => {
       setSelectedCustomerId(null);
   };
   
-  const handlePrintRoute = useCallback(() => {
+  const handlePrintRoute = useCallback(async () => {
     const allItems: ({ type: 'city', name: string } | { type: 'customer', data: Customer })[] = [];
     sortedCities.forEach(city => {
         allItems.push({ type: 'city', name: city });
@@ -258,22 +263,19 @@ const RotasView: React.FC<RotasViewProps> = ({ customers }) => {
         .footer { position: absolute; bottom: 0; width: 100%; text-align: center; font-size: 8pt; color: #888; }
       </style></head><body>${pagesHtml}</body></html>`;
       
-    const printWindow = window.open('', '', 'height=800,width=1000');
-    if (printWindow) {
-        printWindow.document.write(fullHtml);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
+    try {
+        await nativePrintPDF(fullHtml, 'Rota de Cobrança (A4)');
+    } catch (err) {
+        console.error("Print error:", err);
+        alert("Erro ao abrir gerenciador de impressão.");
     }
   }, [customersByCity, sortedCities]);
   
-  const handleThermalPrint = useCallback(() => {
+  const handleThermalPrint = useCallback(async () => {
     const thermalComponent = <ThermalRouteSheet customersByCity={customersByCity} sortedCities={sortedCities} isOptimized={!!optimizedRoute} />;
     const htmlString = ReactDOMServer.renderToString(thermalComponent);
 
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-        printWindow.document.write(`
+    const fullHtml = `
             <html>
                 <head>
                     <title>Rota de Cobrança (Térmica)</title>
@@ -289,14 +291,13 @@ const RotasView: React.FC<RotasViewProps> = ({ customers }) => {
                 </head>
                 <body><div class="thermal-sheet">${htmlString}</div></body>
             </html>
-        `);
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => {
-            printWindow.print();
-        }, 200);
-    } else {
-        alert("Por favor, habilite pop-ups para impressão.");
+        `;
+
+    try {
+        await nativePrintPDF(fullHtml, 'Rota de Cobrança (Térmica)');
+    } catch (err) {
+        console.error("Print error:", err);
+        alert("Erro na impressão térmica.");
     }
 }, [customersByCity, sortedCities, optimizedRoute]);
 

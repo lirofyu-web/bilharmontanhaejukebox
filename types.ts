@@ -10,6 +10,7 @@ export interface Customer {
     numero: string;
     telefone: string;
     linhaNumero: string;
+    estado?: string;
     latitude?: number;
     longitude?: number;
     createdAt: Date;
@@ -89,7 +90,7 @@ export interface Expense {
     id: string;
     description: string;
     amount: number;
-    category: 'abastecimento' | 'manutencao' | 'alimentacao' | 'pecas' | 'outros';
+    category: 'mesa' | 'jukebox' | 'grua' | 'geral' | 'abastecimento' | 'manutencao' | 'alimentacao' | 'pecas' | 'outros';
     date: Date;
 }
 

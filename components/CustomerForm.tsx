@@ -12,6 +12,7 @@ import SignatureModal from './SignatureModal';
 import { ImageIcon } from './icons/ImageIcon';
 import { safeParseFloat } from '../utils';
 import { v4 as uuidv4 } from 'uuid';
+import { Geolocation } from '@capacitor/geolocation';
 
 interface CustomerFormProps {
   customers: Customer[];
@@ -152,49 +153,49 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ customers, initialData, onS
   }, []);
 
   const handleGeolocate = useCallback(async () => {
-    if (!navigator.geolocation) {
-        showNotification("Geolocalização não é suportada.", "error");
-        return;
-    }
     setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-        async (position) => {
-            const { latitude, longitude } = position.coords;
-            try {
-                if (!navigator.onLine) {
-                    setFormData(prev => ({ ...prev, latitude, longitude }));
-                    showNotification("Coordenadas salvas! (Modo Offline - Endereço não preenchido auto.)", "success");
-                    return;
-                }
-                
-                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
-                if (!response.ok) throw new Error('Falha ao buscar endereço.');
-                const data = await response.json();
-                if (data?.address) {
-                    const { road, house_number, city, town, village, state, suburb } = data.address;
-                    const street = `${road || ''}${house_number ? `, ${house_number}` : ''}`;
-                    const cityName = city || town || village || suburb || '';
-                    const fullCity = `${cityName}, ${state || ''}`.replace(/^, |^ | ,$/g, '');
-                    setFormData(prev => ({ ...prev, endereco: street, cidade: fullCity, latitude, longitude }));
-                    showNotification("Endereço preenchido e coordenadas salvas!", "success");
-                } else {
-                    throw new Error("Endereço não encontrado.");
-                }
-            } catch (err) {
-                showNotification(err instanceof Error && err.message !== "Failed to fetch" ? err.message : "Coordenadas salvas, mas houve erro ao buscar o nome da rua.", "success");
-                setFormData(prev => ({ ...prev, latitude, longitude }));
-            } finally {
-                setIsLocating(false);
-            }
-        },
-        (error) => {
-            let message = "Erro ao obter localização.";
-            if (error.code === 1) message = "Permissão de localização negada.";
-            showNotification(message, "error");
+    try {
+        const position = await Geolocation.getCurrentPosition({
+            enableHighAccuracy: true,
+            timeout: 10000
+        });
+        
+        const { latitude, longitude } = position.coords;
+        
+        if (!navigator.onLine) {
+            setFormData(prev => ({ ...prev, latitude, longitude }));
+            showNotification("Coordenadas capturadas via GPS! (Modo Offline - Endereço não preenchido)", "success");
             setIsLocating(false);
-        },
-        { enableHighAccuracy: true }
-    );
+            return;
+        }
+
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+        if (!response.ok) throw new Error('Falha ao buscar endereço.');
+        const data = await response.json();
+        
+        if (data?.address) {
+            const { road, house_number, city, town, village, state, suburb } = data.address;
+            const street = `${road || ''}${house_number ? `, ${house_number}` : ''}`;
+            const cityName = city || town || village || suburb || '';
+            const fullCity = `${cityName}, ${state || ''}`.replace(/^, |^ | ,$/g, '');
+            setFormData(prev => ({ ...prev, endereco: street, cidade: fullCity, latitude, longitude }));
+            showNotification("Endereço e coordenadas capturados com sucesso!", "success");
+        } else {
+            setFormData(prev => ({ ...prev, latitude, longitude }));
+            showNotification("Coordenadas salvas, mas o endereço não foi encontrado.", "success");
+        }
+    } catch (error: any) {
+        console.error("Localização erro:", error);
+        let message = "Erro ao obter localização.";
+        if (error.code === 1 || error.message?.toLowerCase().includes("denied")) {
+            message = "Permissão de localização negada pelo sistema.";
+        } else if (error.message?.toLowerCase().includes("timeout")) {
+            message = "Tempo esgotado ao buscar localização. Tente novamente em local aberto.";
+        }
+        showNotification(message, "error");
+    } finally {
+        setIsLocating(false);
+    }
   }, [showNotification]);
 
   const handleSubmitWrapper = async (e: React.FormEvent) => {

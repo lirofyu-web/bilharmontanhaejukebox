@@ -16,6 +16,7 @@ import CustomerSelectionForSlipsModal from '../components/CustomerSelectionForSl
 import { safeParseFloat } from '../utils';
 import { CreditCardIcon } from '../components/icons/CreditCardIcon';
 import ThermalReportSheet, { ReportColumn } from '../components/ThermalReportSheet';
+import { nativePrintPDF } from '../utils/nativePrint';
 
 interface RelatoriosViewProps {
   customers: Customer[];
@@ -336,7 +337,7 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
     };
   }, [billings, expenses, debtPayments, dateRange, expenseCategory]);
   
-  const printReport = useCallback((title: string, content: string, customDateRange?: string) => {
+  const printReport = useCallback(async (title: string, content: string, customDateRange?: string) => {
     const startDate = dateRange.start ? new Date(dateRange.start + 'T00:00:00').toLocaleDateString('pt-BR') : 'Início';
     const endDate = dateRange.end ? new Date(dateRange.end + 'T00:00:00').toLocaleDateString('pt-BR') : 'Fim';
     const dateTitle = customDateRange || `${startDate} a ${endDate}`;
@@ -368,16 +369,16 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
         </body>
       </html>
     `;
-    const printWindow = window.open('', '', 'height=800,width=1200');
-    if (printWindow) {
-        printWindow.document.write(reportHtml);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
+    
+    try {
+        await nativePrintPDF(reportHtml, `${title} - ${dateTitle}`);
+    } catch (err) {
+        console.error("Print error:", err);
+        showNotification("Erro ao abrir gerenciador de impressão.", "error");
     }
-  }, [dateRange]);
+  }, [dateRange, showNotification]);
   
-  const printThermalReport = useCallback((title: string, columns: ReportColumn[], data: any[], summary?: { label: string; value: string | number }[]) => {
+  const printThermalReport = useCallback(async (title: string, columns: ReportColumn[], data: any[], summary?: { label: string; value: string | number }[]) => {
     if (areValuesHidden) {
         showNotification("Desative o Modo de Privacidade para imprimir relatórios.", "error");
         return;
@@ -386,9 +387,7 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
     const thermalComponent = <ThermalReportSheet title={title} columns={columns} data={data} summary={summary} />;
     const htmlString = ReactDOMServer.renderToString(thermalComponent);
 
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-        printWindow.document.write(`
+    const fullHtml = `
             <html>
                 <head>
                     <title>${title}</title>
@@ -396,7 +395,7 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
                     <style>
                         body {
                             margin: 0;
-                            background-color: #808080; /* Cinza para o fundo fora da área de impressão */
+                            background-color: #808080;
                             display: flex;
                             justify-content: center;
                             align-items: flex-start;
@@ -405,15 +404,15 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
                         }
                         .print-container {
                             max-width: 100%;
-                            overflow-x: auto; /* Permite rolagem horizontal se necessário */
+                            overflow-x: auto;
                         }
                         @page {
-                            size: 80mm auto; /* Tamanho da página para impressão térmica */
+                            size: 80mm auto;
                             margin: 0;
                         }
                         @media print {
                             body {
-                                background-color: #fff; /* Fundo branco ao imprimir */
+                                background-color: #fff;
                                 justify-content: flex-start;
                                 padding: 0;
                             }
@@ -426,14 +425,13 @@ const RelatoriosView: React.FC<RelatoriosViewProps> = ({ customers, billings, ex
                     </div>
                 </body>
             </html>
-        `);
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => {
-            printWindow.print();
-        }, 500); // Aumentado para garantir a renderização
-    } else {
-        alert("Por favor, habilite pop-ups para impressão.");
+        `;
+
+    try {
+        await nativePrintPDF(fullHtml, title);
+    } catch (err) {
+        console.error("Print error:", err);
+        showNotification("Erro ao imprimir.", "error");
     }
 }, [areValuesHidden, showNotification]);
 
